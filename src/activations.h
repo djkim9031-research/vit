@@ -10,7 +10,7 @@
 // @param y             linearized output tensors
 // @param N             number of elements
 //
-inline void gelu_forward(float *x, float *y, int N){
+inline void gelu_forward(float* x, float* y, int N){
     for(int i=0; i<N; ++i){
         float x_i = x[i];
         float cube_term = 0.0044715f * x_i * x_i * x_i;
@@ -26,7 +26,7 @@ inline void gelu_forward(float *x, float *y, int N){
 // @param dy            linearized output derivatives
 // @param N             number of elements
 //
-inline void gelu_backward(float *x, float *dx, float *dy, int N){
+inline void gelu_backward(float* x, float* dx, float* dy, int N){
     for(int i=0; i<N; ++i){
         float x_i = x[i];
         float cube_term = 0.0044715f * x_i * x_i * x_i;
