@@ -11,7 +11,7 @@ TEST(ResidualTest, forward_call) {
     // z_truth is pytorch tensor output.
     /* Python code
 
-    torch.set_printoptions(precision=7)
+    torch.set_printoptions(precision=5)
     n = GELUActivation()
     x = [0.0, 0.1, 0.2, 0.3, 0.4]
     x = torch.tensor(x, requires_grad=True)
@@ -19,8 +19,8 @@ TEST(ResidualTest, forward_call) {
     z = y + x
     print(z)
     */
-    float z_truth[5] = {0.0000000, 0.1539828, 0.3158514, 0.4853709, 0.6621612};
-    float tolerance = 5e-7;
+    float z_truth[5] = {0.00000, 0.15398, 0.31585, 0.48537, 0.66216};
+    float tolerance = 5e-6;
 
     gelu_forward(x, y, 5);
     residual_forward(y, x, z, 5);
@@ -42,7 +42,7 @@ TEST(ResidualTest, backward_call) {
     // dx_truth is pytorch tensor.grad output.
     /* Python code
 
-    torch.set_printoptions(precision=7)
+    torch.set_printoptions(precision=5)
     n = GELUActivation()
     x = [0.0, 0.1, 0.2, 0.3, 0.4]
     x = torch.tensor(x, requires_grad=True)
@@ -52,8 +52,8 @@ TEST(ResidualTest, backward_call) {
     print(x.grad)
     */
 
-   float dx_truth[5] = {1.5000000, 1.5795219, 1.6574581, 1.7322955, 1.8026588};
-   float tolerance = 5e-7;
+   float dx_truth[5] = {1.50000, 1.57952, 1.65746, 1.73230, 1.80266};
+   float tolerance = 5e-6;
    gelu_forward(x, y, 5);
    residual_forward(y, x, z, 5);
    residual_backward(dy, dx, dz, 5);

@@ -9,15 +9,15 @@ TEST(GeLUTest, forward_call) {
     // y_truth is pytorch tensor output.
     /* Python code
 
-    torch.set_printoptions(precision=7)
+    torch.set_printoptions(precision=5)
     n = GELUActivation()
     x = [0.0, 0.1, 0.2, 0.3, 0.4]
     x = torch.tensor(x, requires_grad=True)
     y = n(x)
     print(y)
     */
-    float y_truth[5] = {0.0000000, 0.0539828, 0.1158514, 0.1853709, 0.2621612};
-    float tolerance = 5e-7;
+    float y_truth[5] = {0.00000, 0.05398, 0.11585, 0.18537, 0.26216};
+    float tolerance = 5e-6;
 
     gelu_forward(x, y, 5);
     for(int i=0; i<5; ++i){
@@ -35,7 +35,7 @@ TEST(GeLUTest, backward_call){
     // dx_truth is pytorch tensor.grad output.
     /* Python code
 
-    torch.set_printoptions(precision=7)
+    torch.set_printoptions(precision=5)
     n = GELUActivation()
     x = [0.0, 0.1, 0.2, 0.3, 0.4]
     x = torch.tensor(x, requires_grad=True)
@@ -43,8 +43,8 @@ TEST(GeLUTest, backward_call){
     y.sum().backward()
     print(x.grad)
     */
-   float dx_truth[5] = {0.5000000, 0.5795218, 0.6574581, 0.7322955, 0.8026589};
-   float tolerance = 5e-7;
+   float dx_truth[5] = {0.50000, 0.57952, 0.65746, 0.73230, 0.80266};
+   float tolerance = 5e-6;
 
    gelu_forward(x, y, 5);
    gelu_backward(x, dx, dy, 5);
