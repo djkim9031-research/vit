@@ -28,3 +28,4 @@ endfunction()
 
 # Add test executables
 add_gtest_executable(activations)
+add_gtest_executable(residual)
