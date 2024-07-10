@@ -13,7 +13,7 @@
 inline void gelu_forward(float* x, float* y, int N){
     for(int i=0; i<N; ++i){
         float x_i = x[i];
-        float cube_term = 0.0044715f * x_i * x_i * x_i;
+        float cube_term = 0.044715f * x_i * x_i * x_i;
         y[i] = 0.5 * x_i * (1.f + tanhf(GELU_SCALING_FACTOR * (x_i + cube_term)));
     }
 }
@@ -29,7 +29,7 @@ inline void gelu_forward(float* x, float* y, int N){
 inline void gelu_backward(float* x, float* dx, float* dy, int N){
     for(int i=0; i<N; ++i){
         float x_i = x[i];
-        float cube_term = 0.0044715f * x_i * x_i * x_i;
+        float cube_term = 0.044715f * x_i * x_i * x_i;
         float q = GELU_SCALING_FACTOR * (x_i + cube_term);
         float tanh_term = 0.5*(1 + tanhf(q));
         float cosh = coshf(q);
