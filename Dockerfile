@@ -14,6 +14,7 @@ RUN apt-get update && \
     curl \
     unzip \
     libopencv-dev \
+    libgtest-dev \
     python3-dev \
     python3-pip &&   \
     apt-get clean && \
@@ -29,6 +30,12 @@ RUN cd /opt && wget https://github.com/Kitware/CMake/releases/download/v3.29.6/c
     ./bootstrap && \
     make && make install && \
     rm ../cmake-3.29.6.tar.gz 
+
+# Install gtest
+RUN cd /usr/src/gtest && \
+    cmake . && \
+    make && \
+    cp ./lib/libgtest*.a /usr/lib
 
 # Set the working directory in the container
 WORKDIR /code
