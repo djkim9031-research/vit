@@ -106,7 +106,7 @@ inline void attention_backward(float* x, float* attn,
                 // backward to get dvalue and dattn
                 for(int t2=0; t2<T; ++t2){
                     float* dvalue = dx + b*T*3*H + t2*3*H + nh*HS + 2*H;
-                    float* value = dx + b*T*3*H + t2*3*H + nh*HS + 2*H;
+                    float* value = x + b*T*3*H + t2*3*H + nh*HS + 2*H;
                     for(int i=0; i<HS; ++i){
                         // y[i] = attn[i] * value[i]
                         dattn[b*NH*T*T + nh*T*T + t1*T + t2] += value[i] * dy[b*T*H + t1*H + nh*HS + i];
@@ -130,7 +130,7 @@ inline void attention_backward(float* x, float* attn,
                 // backward through q@k
                 for(int t2=0; t2<T; ++t2){
                     float* dkey = dx + b*T*3*H + t2*3*H + nh*HS + H;
-                    float* key = dx + b*T*3*H + t2*3*H + nh*HS + H;
+                    float* key = x + b*T*3*H + t2*3*H + nh*HS + H;
                     for(int i=0; i<HS; ++i){
                         // preattn[i] = query[i]*key[i]*scale
                         dquery[i] += dpreattn[b*NH*T*T + nh*T*T + t1*T + t2] * scale * key[i];
