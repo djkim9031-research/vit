@@ -398,7 +398,7 @@ TEST(AttentionTest, backward_call){
                               0.265000,  0.525000,  3.845000,  1.535000,  1.312500,  4.759000, 5.455000,  5.307500, -3.005000, -0.288500,
                               0.265000,  0.525000,  3.845000,  1.535000,  1.312500,  4.759000, 5.455000,  5.307500, -3.005000, -0.288500,
                               0.265000,  0.525000,  3.845000,  1.535000,  1.312500,  4.759000, 5.455000,  5.307500, -3.005000, -0.288500};
-    // Set slightly higher tolerance level to account for different scales in different layers(10s, 1s, 0.xx)
+    // Set slightly higher tolerance level to account for different scales in different layers(10s, 1s, 0.xx) => This is due to the absence of normalization.
     float tolerance = 5e-5;
 
     matmul_forward(x, qkv_proj, w, bias, 1, 10, 2, 6);
