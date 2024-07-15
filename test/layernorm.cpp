@@ -351,8 +351,58 @@ TEST(LayerNormTest, backward_call) {
     float dweight[2] = {0.0, 0.0};
     float dx[20] = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
 
-    //
-    //
+    // y_truth is pytorch tensor output.
+    /* Python code
+
+    torch.set_printoptions(precision=6)
+    x = [0.0, 1.1, -0.2, 3.3, 2.4, 1.5, 0.6, 2.7, 0.8, 0.65,
+         2.12, 6.78, 2.2, 9.1, 3.4, 1.55, -1.6, -2.7, -0.08, -0.65]
+    x = torch.tensor(x, dtype=torch.float32).view(1, 10, 2)
+    x = x.requires_grad_()
+
+    ln = nn.LayerNorm(normalized_shape=(x.shape[-1]), eps=1e-5)
+    ln.weight = nn.Parameter(torch.tensor([0.5, 0.3]))
+    ln.bias = nn.Parameter(torch.tensor([0.02, -0.01]))
+    x_normalized = ln(x)
+    x_normalized.retain_grad()
+
+
+    weight = torch.tensor([0.12, -1.2, -0.7, 1.0, -1.3, 1.45,
+                           0.08, 0.36, 1.6, -0.34, 0.87, 0.25], requires_grad=True)
+    weight = nn.Parameter(weight.view(2, 6))
+    bias = torch.tensor([0.02, 0.03, 0.05, -0.02, -0.03, -0.01], requires_grad=True)
+    bias = nn.Parameter(bias.view(6))
+
+    qkv_proj = x_normalized@weight + bias
+    qkv_proj.retain_grad()
+
+    query, key, value = torch.chunk(qkv_proj, 3, dim=-1)
+    query = query.view(1, 10, 2, 1).transpose(1, 2)
+    key = key.view(1, 10, 2, 1).transpose(1, 2)
+    value = value.view(1, 10, 2, 1).transpose(1, 2)
+
+    preattn = torch.matmul(query, key.transpose(-1, -2))
+    preattn /= math.sqrt(1)
+    maxval = torch.max(preattn).item()
+
+    preattn -= maxval
+    preattn.retain_grad()
+    attn = nn.functional.softmax(preattn, dim=-1)
+    attn.retain_grad()
+
+    y = torch.matmul(attn, value).transpose(1, 2).contiguous().view(1, 10, -1)
+    y.sum().backward()
+
+    print(attn.grad)
+    print(preattn.grad)
+    print(qkv_proj.grad)
+    print(weight.grad)
+    print(bias.grad)
+    print(x_normalized.grad)
+    print(ln.bias.grad)
+    print(ln.weight.grad)
+    print(x.grad)
+    */
 
     float dx_truth[20] = {-1.506507e-05,  1.510978e-05, -4.433095e-07,  4.395843e-07, -2.360344e-05,  2.360344e-05, -2.160668e-06,  2.145767e-06, -5.117416e-03,  5.113602e-03,
                           -1.788139e-07,  1.341105e-07, -3.725290e-08,  5.960464e-08, -2.741814e-06,  2.741814e-06, -1.287460e-05,  1.311302e-05, -9.343028e-05,  9.340048e-05};
