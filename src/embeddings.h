@@ -41,7 +41,7 @@ inline void reverse_flatten_and_transpose(float* x_mod, float* x, int B, int C, 
 
 // Embedding, forward function
 // @param x1            linearized patch embedding original input tensor, [batch_size, hidden_size, OH, OW]
-// @param x2            linearized class token input tensor, [batch_size, 1, hidden_size]
+// @param x2            linearized class token input tensor, [1, 1, hidden_size]
 // @param pos_embd      linearized position embedding tensor, [1, num_patches+1, hidden_size]
 // @param y             linearized output tensor, [batch_size, num_patches+1, hidden_size]
 // @param B             number of batches
@@ -64,7 +64,7 @@ inline void embeddings_forward(float* x1, float* x2, float* pos_embd, float* y,
             for(int h=0; h<H; ++h){
                 float val = 0.f;
                 if(p==0){
-                    val = x2[b*H + h];
+                    val = x2[h];
                 } else {
                     val = x1_mod[b*P*H + (p-1)*H + h];
                 }
@@ -80,9 +80,7 @@ inline void embeddings_forward(float* x1, float* x2, float* pos_embd, float* y,
 }
 
 // Embedding, backward function
-// @param x1            linearized patch embedding original input tensor, [batch_size, hidden_size, OH, OW]
-// @param x2            linearized class token input tensor, [batch_size, 1, hidden_size]
-// @param pos_embd      linearized position embedding tensor, [1, num_patches+1, hidden_size]
+// @param x1            linearized patch embedding original input tensor, [batch_size, hidden_size, OH, OW]         
 // @param dx1           linearized patch embedding original input derivatives
 // @param dx2           linearized class token input derivatives
 // @param dpos_embd     linearized position embedding derivatives
@@ -93,8 +91,8 @@ inline void embeddings_forward(float* x1, float* x2, float* pos_embd, float* y,
 // @param OH            patch embedding's original tensor height dim
 // @param OW            patch embedding's original tensor width dim
 //
-inline void embeddings_backward(float* x1, float* x2, float* pos_embd,
-                                float* dx1, float* dx2, float* dpos_embd, float* dy,
+inline void embeddings_backward(float* x1, float* dx1, float* dx2, 
+                                float* dpos_embd, float* dy,
                                 int B, int P, int H, int OH, int OW){
 
     assert(OH*OW == P);
@@ -108,7 +106,7 @@ inline void embeddings_backward(float* x1, float* x2, float* pos_embd,
                 float grad = dy[b*(P+1)*H + p*H + h];
                 if(p==0){
                     #pragma omp atomic
-                    dx2[b*H + h] += grad;
+                    dx2[h] += grad;
                 } else {
                     #pragma omp atomic
                     dx1_mod[b*P*H + (p-1)*H + h] += grad;

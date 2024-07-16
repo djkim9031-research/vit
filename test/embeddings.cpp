@@ -213,7 +213,7 @@ TEST(EmbeddingsTest, backward_call) {
 
     conv2d_forward(conv_x, kernel, bias, conv_y, 1, 3, 6, 6, 1, 2, 2, 2);
     embeddings_forward(conv_y, cls_tok, pos_embd, z, 1, 9, 1, 3, 3);
-    embeddings_backward(conv_y, cls_tok, pos_embd, dconv_y, dcls_tok, dpos_embd, dz, 1, 9, 1, 3, 3);
+    embeddings_backward(conv_y, dconv_y, dcls_tok, dpos_embd, dz, 1, 9, 1, 3, 3);
     conv2d_backward(conv_x, kernel, dconv_x, dkernel, dbias, dconv_y, 1, 3, 6, 6, 1, 2, 2, 2);
     for(int i=0;i<10;++i){
         EXPECT_NEAR(dpos_embd[i], dpos_embd_truth[i], tolerance);
