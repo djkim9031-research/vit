@@ -69,7 +69,7 @@ typedef struct{
     float* mlph_gelu; // gelu output (L, B, T, 4*H)
     float* mlp_proj; // MLP projection output (L, B, T, H)
     float* resi_mlp; // post mlp residual output (L, B, T, H)
-    float* logits; // matmul output projection H to num_classes (B, T, NC)
-    float* probs; // softmax output (B, T, NC);
-    float* losses; // loss metric for optimization (B, T);
+    float* logits; // matmul output projection H to num_classes (B, 1, NC)
+    float* probs; // softmax output (B, 1, NC);
+    float* losses; // loss metric for optimization (B, 1, 1);
 } ActivationTensors;
