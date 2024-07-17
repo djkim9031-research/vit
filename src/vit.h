@@ -31,7 +31,7 @@ float* malloc_and_point_parameters(ParameterTensors* params, size_t* param_sizes
         num_parameters += param_sizes[i];
     }
     
-    // malloc all parameters allat once
+    // malloc all parameters at once
     float* params_memory = (float*)malloc(num_parameters * sizeof(float));
     // assign all the tensors
     float** ptrs[] = {
@@ -73,3 +73,40 @@ typedef struct{
     float* probs; // softmax output (B, 1, NC);
     float* losses; // loss metric for optimization (B, 1, 1);
 } ActivationTensors;
+
+// Allocate memory for the activation tensors and point the individual tensors to the right places
+float* malloc_and_point_activations(ActivationTensors* acts, size_t* act_sizes){
+    size_t num_activations = 0;
+    for(size_t i=0; i<NUM_ACTIVATION_TENSORS; ++i){
+        num_activations += act_sizes[i];
+    }
+    
+    // malloc all parameters
+    float* acts_memory = (float*)malloc(num_activations * sizeof(float));
+    // assign all the tensors
+    float** ptrs[] = {
+        &acts->encoded, &acts->ln1_mean, &acts->ln1_rstd, &acts->ln1, &acts->qkv,
+        &acts->preattn, &acts->attn, &acts->attn_y, &acts->attn_proj, &acts->resi_attn,
+        &acts->ln2_mean, &acts->ln2_rstd, &acts->ln2, &acts->mlph, &acts->mlph_gelu,
+        &acts->mlp_proj, &acts->resi_mlp, &acts->logits, &acts->probs, &acts->losses
+    };
+
+    float* acts_memory_iterators = acts_memory;
+    for(size_t i=0; i<NUM_ACTIVATION_TENSORS; ++i){
+        *(ptrs[i]) = acts_memory_iterators;
+        acts_memory_iterators += act_sizes[i];
+    }
+    
+    return acts_memory;
+}
+
+typedef struct{
+    int image_width; // 32
+    int image_height; // 32
+    int num_channels; // 3
+    int patch_size; // 4, therefore, for a 32 x 32 image, 8 x 8 patches are generated.
+    int hidden_size; // 48
+    int num_attention_heads; // 4, so head size = 48/4 = 12
+    int num_layers; // L = 4
+    int num_classes; // 10, CIFAR10 dataset
+} ViTConfig;
