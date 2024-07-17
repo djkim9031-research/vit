@@ -50,6 +50,7 @@ float* malloc_and_point_parameters(ParameterTensors* params, size_t* param_sizes
     return params_memory;
 }
 
+#define NUM_ACTIVATION_TENSORS 20
 typedef struct{
     float* encoded; // (batch_size (B), num_patches + 1 (T), hidden_size (H))
     float* ln1_mean; // (L, B, T)
@@ -68,6 +69,7 @@ typedef struct{
     float* mlph_gelu; // gelu output (L, B, T, 4*H)
     float* mlp_proj; // MLP projection output (L, B, T, H)
     float* resi_mlp; // post mlp residual output (L, B, T, H)
-    // softmax outputs
-
+    float* logits; // matmul output projection H to num_classes (B, T, NC)
+    float* probs; // softmax output (B, T, NC);
+    float* losses; // loss metric for optimization (B, T);
 } ActivationTensors;
