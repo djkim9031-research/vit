@@ -110,3 +110,35 @@ typedef struct{
     int num_layers; // L = 4
     int num_classes; // 10, CIFAR10 dataset
 } ViTConfig;
+
+typedef struct{
+    ViTConfig config;
+
+    // The weights (params) of the model, and their sizes.
+    ParameterTensors params;
+    size_t param_sizes[NUM_PARAMETER_TENSORS];
+    float* params_memory;
+    size_t num_params;
+    // Gradients of the weights
+    ParameterTensors params_grads;
+    float* params_grads_memory;
+    // Buffers for the AdamW optimizer
+    float* m_memory;
+    float* v_memory;
+
+    // The activations of the model, and their sizes.
+    ActivationTensors acts;
+    size_t act_sizes[NUM_ACTIVATION_TENSORS];
+    float* acts_memory;
+    size_t num_activations;
+    // Gradients of the activations
+    ActivationTensors acts_grads;
+    float* acts_grads_memory;
+
+    // Other run state configurations
+    int batch_size;
+    float* inputs;
+    int* targets;
+    float mean_loss;
+    
+} ViTModel;
