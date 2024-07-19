@@ -53,8 +53,15 @@ inline int BMPReader(const char* filename, const int width, const int height, BG
     return 0;
 }
 
-
-inline int ReadAllBMPsInDirectory(const char* dirPath, BGR*** allPixels, int& nImages, int width, int height){
+// BMP image file reader function - read all images inside a directory
+//
+// @param dirPath       path to the folder that contains bmp images
+// @param allPixels     pixels extracted from all the bmp image.
+// @param nImages       number of bmp images inside the folder.
+// @param width         width of the bmp image.
+// @param height        height of the bmp image.
+//
+inline int ReadAllBMPsInDirectory(const char* dirPath, BGR*** allPixels, int& nImages, const int width, const int height){
     DIR* dir = opendir(dirPath);
     if(!dir){
         perror("Unable to open the given directory.");
