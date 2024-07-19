@@ -106,4 +106,41 @@ inline int ReadAllBMPsInDirectory(const char* dirPath, BGR*** allPixels, int& nI
     return 0;
 }
 
+// Label reader function, which reads all the labels for the dataset in .txt file.
+//
+// @param filename      path to the .txt lbael file.
+// @param nImages       number of bmp images inside the folder.
+// @param labels        labels extracted from the txt file.
+//
+inline int LabelReader(const char* filename, const int nImages, int** labels){
+    FILE* file = fopen(filename, "r");
+    if(!file){
+        perror("Unable to open the label text file.");
+        return -1;
+    }
+
+    *labels = (int*)malloc(nImages*sizeof(int));
+    if(*labels == NULL){
+        perror("Unable to allocate memory");
+        fclose(file);
+        return -1;
+    }
+
+    int idx = 0;
+    char line[256];
+    while(fgets(line, sizeof(line), file)){
+        if(idx >= nImages){
+            break;
+        }
+
+        int label;
+        if(sscanf(line, "%*d: %d", &label)==1){
+            (*labels)[idx++] = label;
+        }
+    }
+
+    fclose(file);
+    return 0;
+}
+
 
