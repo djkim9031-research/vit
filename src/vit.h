@@ -1,6 +1,9 @@
 #pragma once
 #include <stddef.h>
 #include <stdlib.h>
+#include <stdio.h>
+#include <assert.h>
+#include <string.h>
 
 #define NUM_PARAMETER_TENSORS 18
 typedef struct{
@@ -103,7 +106,7 @@ float* malloc_and_point_activations(ActivationTensors* acts, size_t* act_sizes){
 typedef struct{
     int image_width; // 32
     int image_height; // 32
-    int num_channels; // 3
+    int channels; // 3
     int patch_size; // 4, therefore, for a 32 x 32 image, 8 x 8 patches are generated.
     int hidden_size; // 48
     int num_attention_heads; // 4, so head size = 48/4 = 12
@@ -142,3 +145,12 @@ typedef struct{
     float mean_loss;
     
 } ViTModel;
+
+// Vit forward function
+//
+// @param model         Model config for the current ViT model.
+// @param inputs        linearized input tensors (B, C, H, W)
+// @param targets       linearized ground truth label tensors (B, 1, 1)
+// @param B             number of batches
+//
+void ViT_forward(ViTModel* model, float* inputs, int* targets, int B);
