@@ -32,7 +32,7 @@ inline void softmax_forward(float* logits, float* probs,
 // crossentropy forward function
 //
 // @param probs         linearized input probability tensors (B, 1, NC)
-// @param targets       linearized ground truth input tensors (B, 1, 1)
+// @param targets       linearized ground truth label tensors (B, 1, 1)
 // @param losses        linearized output losses tensors (B, 1, 1)
 // @param B             number of batches
 // @param NC            number of classes
@@ -49,7 +49,7 @@ void crossentropy_forward(float* probs, int* targets, float* losses,
 // crossentropy and softmax backward function
 //
 // @param probs         linearized input probability tensors (B, 1, NC)
-// @param targets       linearized ground truth input tensors (B, 1, 1)
+// @param targets       linearized ground truth label tensors (B, 1, 1)
 // @param dlogits       linearized logit tensors derivatives (B, 1, NC)
 // @param dlosses       linearized losses tensors derivatives (B, 1, 1)
 // @param B             number of batches
