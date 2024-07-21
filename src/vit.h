@@ -5,6 +5,15 @@
 #include <assert.h>
 #include <string.h>
 
+#include "conv2d.h"
+#include "embeddings.h"
+#include "layernorm.h"
+#include "matmul.h"
+#include "attention.h"
+#include "residual.h"
+#include "activations.h"
+#include "softmax.h"
+
 #define NUM_PARAMETER_TENSORS 18
 typedef struct{
     float* patch_embd_kernal; // (hidden_size (H), num_channel(C), patch_height (PH), patch_width (PW))
@@ -53,8 +62,9 @@ float* malloc_and_point_parameters(ParameterTensors* params, size_t* param_sizes
     return params_memory;
 }
 
-#define NUM_ACTIVATION_TENSORS 20
+#define NUM_ACTIVATION_TENSORS 22
 typedef struct{
+    float* patch_embd; // (B, H, img_height/patch_size, img_width/path_size)
     float* encoded; // (batch_size (B), num_patches + 1 (T), hidden_size (H))
     float* ln1_mean; // (L, B, T)
     float* ln1_rstd; // (L, B, T)
@@ -72,6 +82,7 @@ typedef struct{
     float* mlph_gelu; // gelu output (L, B, T, 4*H)
     float* mlp_proj; // MLP projection output (L, B, T, H)
     float* resi_mlp; // post mlp residual output (L, B, T, H)
+    float* features; // Tensors at first idx of sequence T extracted from resi_mlp (B, 1, H)
     float* logits; // matmul output projection H to num_classes (B, 1, NC)
     float* probs; // softmax output (B, 1, NC);
     float* losses; // loss metric for optimization (B, 1, 1);
@@ -88,10 +99,10 @@ float* malloc_and_point_activations(ActivationTensors* acts, size_t* act_sizes){
     float* acts_memory = (float*)malloc(num_activations * sizeof(float));
     // assign all the tensors
     float** ptrs[] = {
-        &acts->encoded, &acts->ln1_mean, &acts->ln1_rstd, &acts->ln1, &acts->qkv,
+        &acts->patch_embd, &acts->encoded, &acts->ln1_mean, &acts->ln1_rstd, &acts->ln1, &acts->qkv,
         &acts->preattn, &acts->attn, &acts->attn_y, &acts->attn_proj, &acts->resi_attn,
         &acts->ln2_mean, &acts->ln2_rstd, &acts->ln2, &acts->mlph, &acts->mlph_gelu,
-        &acts->mlp_proj, &acts->resi_mlp, &acts->logits, &acts->probs, &acts->losses
+        &acts->mlp_proj, &acts->resi_mlp, &acts->features, &acts->logits, &acts->probs, &acts->losses
     };
 
     float* acts_memory_iterators = acts_memory;
