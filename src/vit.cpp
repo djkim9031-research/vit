@@ -143,3 +143,51 @@ void ViT_forward(ViTModel* model, float* inputs, int* targets, int B){
     mean_loss /= B;
     model->mean_loss = mean_loss;
 }
+
+void ViT_backward(ViTModel* model){
+
+    // Allocate the memory for gradients of weights and activations if memory==NULL
+    if(model->params_grads_memory == NULL){
+        model->params_grads_memory = malloc_and_point_parameters(&model->params_grads, model->param_sizes);
+        model->acts_grads_memory = malloc_and_point_activations(&model->acts_grads, model->act_sizes);
+        ViT_zero_grad(model);
+    }
+
+    // Number parameters
+    int B = model->batch_size;
+    int NC = model->config.num_classes;
+    int NL = model->config.num_layers;
+    int NH = model->config.num_attention_heads;
+    int im_C = model->config.channels;
+    int im_H = model->config.image_height;
+    int im_W = model->config.image_width;
+    int H = model->config.hidden_size;
+    int P = model->config.patch_size;
+    int NP = (im_W/P)*(im_H/P);
+    int T = NP + 1;
+
+    // Sanity check was performed during forward pass, so safe to skip
+
+    // Backward pass
+    ParameterTensors params = model->params;
+    ParameterTensors param_grads = model->params_grads;
+    ActivationTensors acts = model->acts;
+    ActivationTensors acts_grads = model->acts_grads;
+
+    // Start the chainrule by filling in dlosses with 1.f/B
+    float dloss_mean = 1.f/B;
+    for(int b=0; b<B; ++b) {acts_grads.losses[b] = dloss_mean;}
+
+    crossentropy_softmax_backward(acts.probs, model->targets, acts_grads.logits, acts_grads.losses, B, NC);
+    float* residual = acts.resi_mlp + (NL-1)*B*T*H; // (B, T, H)
+    float* dresidual = acts_grads.resi_mlp + (NL-1)*B*T*H;
+    matmul_backward_with_slicing_at_t(residual, params.clsw, dresidual, param_grads.clsw, param_grads.clsb,
+                                      acts_grads.logits, B, T, H, NC, 0);
+    for(int l=NL-1; l>=0; --l){
+        residual = l == 0 ? acts.encoded : acts.resi_mlp + (l-1)*B*T*H;
+        dresidual = l == 0 ? acts_grads.encoded : acts_grads.resi_mlp + (l-1)*B*T*H;
+
+        // get the pointers of the weights for the current layer
+    }
+
+}

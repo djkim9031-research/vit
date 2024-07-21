@@ -156,7 +156,16 @@ typedef struct{
     
 } ViTModel;
 
-// Vit forward function
+inline void ViT_zero_grad(ViTModel* model){
+    if(model->params_grads_memory != NULL){
+        memset(model->params_grads_memory, 0, model->num_params*sizeof(float));
+    }
+    if(model->acts_grads_memory != NULL){
+        memset(model->acts_grads_memory, 0, model->num_activations*sizeof(float));
+    }
+}
+
+// ViT forward function
 //
 // @param model         Model config for the current ViT model.
 // @param inputs        linearized input tensors (B, C, H, W)
@@ -164,3 +173,8 @@ typedef struct{
 // @param B             number of batches
 //
 void ViT_forward(ViTModel* model, float* inputs, int* targets, int B);
+
+// ViT backward function
+//
+// @param model         Model config for the current ViT model.
+void ViT_backward(ViTModel* model);
