@@ -45,10 +45,9 @@ void ViT_forward(ViTModel* model, float* inputs, int* targets, int B){
         model->act_sizes[15] = NL*B*T*4*H; // mlph_gelu
         model->act_sizes[16] = NL*B*T*H; // mlp_proj
         model->act_sizes[17] = NL*B*T*H; // mlp_resi
-        model->act_sizes[18] = B*H; // features
-        model->act_sizes[19] = B*NC; // logits
-        model->act_sizes[20] = B*NC; // probs
-        model->act_sizes[21] = B; // losses
+        model->act_sizes[18] = B*NC; // logits
+        model->act_sizes[19] = B*NC; // probs
+        model->act_sizes[20] = B; // losses
 
         size_t num_activations = 0;
         for(size_t i=0; i<NUM_ACTIVATION_TENSORS; ++i){
@@ -132,5 +131,15 @@ void ViT_forward(ViTModel* model, float* inputs, int* targets, int B){
     // classifier
     // The first index in the sequence T, corresponding to cls_token is responsible for 
     // classification prediction.
-    
+    matmul_forward_with_slicing_at_t(residual, acts.logits, params.clsw, params.clsb, B, T, H, NC, 0);
+    softmax_forward(acts.logits, acts.probs, B, NC);
+    crossentropy_forward(acts.probs, targets, acts.losses, B, NC);
+
+    // loss metric calculation for the model
+    float mean_loss = 0.f;
+    for(int b=0; b<B; ++b){
+        mean_loss += acts.losses[b];
+    }
+    mean_loss /= B;
+    model->mean_loss = mean_loss;
 }

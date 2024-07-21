@@ -62,7 +62,7 @@ float* malloc_and_point_parameters(ParameterTensors* params, size_t* param_sizes
     return params_memory;
 }
 
-#define NUM_ACTIVATION_TENSORS 22
+#define NUM_ACTIVATION_TENSORS 21
 typedef struct{
     float* patch_embd; // (B, H, img_height/patch_size, img_width/path_size)
     float* encoded; // (batch_size (B), num_patches + 1 (T), hidden_size (H))
@@ -82,7 +82,6 @@ typedef struct{
     float* mlph_gelu; // gelu output (L, B, T, 4*H)
     float* mlp_proj; // MLP projection output (L, B, T, H)
     float* resi_mlp; // post mlp residual output (L, B, T, H)
-    float* features; // Tensors at first idx of sequence T extracted from resi_mlp (B, 1, H)
     float* logits; // matmul output projection H to num_classes (B, 1, NC)
     float* probs; // softmax output (B, 1, NC);
     float* losses; // loss metric for optimization (B, 1, 1);
@@ -102,7 +101,7 @@ float* malloc_and_point_activations(ActivationTensors* acts, size_t* act_sizes){
         &acts->patch_embd, &acts->encoded, &acts->ln1_mean, &acts->ln1_rstd, &acts->ln1, &acts->qkv,
         &acts->preattn, &acts->attn, &acts->attn_y, &acts->attn_proj, &acts->resi_attn,
         &acts->ln2_mean, &acts->ln2_rstd, &acts->ln2, &acts->mlph, &acts->mlph_gelu,
-        &acts->mlp_proj, &acts->resi_mlp, &acts->features, &acts->logits, &acts->probs, &acts->losses
+        &acts->mlp_proj, &acts->resi_mlp, &acts->logits, &acts->probs, &acts->losses
     };
 
     float* acts_memory_iterators = acts_memory;
