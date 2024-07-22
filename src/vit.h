@@ -156,6 +156,7 @@ typedef struct{
     
 } ViTModel;
 
+// Zero-ing out all the gradients.
 inline void ViT_zero_grad(ViTModel* model){
     if(model->params_grads_memory != NULL){
         memset(model->params_grads_memory, 0, model->num_params*sizeof(float));
@@ -178,3 +179,16 @@ void ViT_forward(ViTModel* model, float* inputs, int* targets, int B);
 //
 // @param model         Model config for the current ViT model.
 void ViT_backward(ViTModel* model);
+
+// ViT update function. This is called once the forward-backward pass are made, and works as an AdamW optimizer.
+// reference: https://pytorch.org/docs/stable/generated/torch.optim.AdamW.html
+//
+// @param model         Model config for the current ViT model.
+// @param learning_rate Learning rate of the optimizer
+// @param beta1         First coefficient to compute running averages of gradients and its square
+// @param beta2         Second coefficient to compute running averages of gradients and its square
+// @param eps           Term added to the denominator to improve numerical stability
+// @param weight_decay  Weight decay coefficient
+// @param t             Current gradient step
+void ViT_update(ViTModel* model, float learning_rate, float beta1, float beta2, float eps, float weight_decay, int t);
+

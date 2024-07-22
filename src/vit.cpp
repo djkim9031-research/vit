@@ -249,3 +249,30 @@ void ViT_backward(ViTModel* model){
     embeddings_backward(acts.patch_embd, acts_grads.patch_embd, param_grads.cls_token, param_grads.pos_embd, acts_grads.encoded, B, NP, H, im_H/P, im_W/P);
     conv2d_backward(model->inputs, params.patch_embd_kernal, NULL, param_grads.patch_embd_kernal, param_grads.patch_embd_bias, acts_grads.patch_embd, B, im_C, im_H, im_W, H, P, P, P);
 }
+
+void ViT_update(ViTModel* model, float learning_rate, float beta1, float beta2, float eps, float weight_decay, int t){
+    // Allocate the memory for m_memory and v_memory if memory is NULL
+    if(model->m_memory == NULL){
+        model->m_memory = (float*)calloc(model->num_params, sizeof(float));
+        model->v_memory = (float*)calloc(model->num_params, sizeof(float));
+    }
+
+    // Gradient updates
+    for(int i=0; i<model->num_params; ++i){
+        float param = model->params_memory[i];
+        float grad = model->params_grads_memory[i];
+
+        // Update the first moment (momentum)
+        float m = beta1 * model->m_memory[i] + (1.f - beta1)*grad;
+        // Update the second moment (RMSprop)
+        float v = beta2 * model->v_memory[i] + (1.f - beta2)*grad*grad;
+        // Bias corrections
+        float m_hat = m / (1.f - powf(beta1, t));
+        float v_hat = v / (1.f - powf(beta2, t));
+
+        // Update
+        model->m_memory[i] = m;
+        model->v_memory[i] = v;
+        model->params_memory[i] -= learning_rate * (m_hat / (sqrtf(v_hat) + eps) + weight_decay * param);
+    }
+}
