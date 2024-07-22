@@ -188,6 +188,64 @@ void ViT_backward(ViTModel* model){
         dresidual = l == 0 ? acts_grads.encoded : acts_grads.resi_mlp + (l-1)*B*T*H;
 
         // get the pointers of the weights for the current layer
-    }
+        float* l_ln1w = params.ln1w + l*H;
+        float* l_qkvw = params.qkvw + l*H*3*H; 
+        float* l_attn_projw = params.attn_projw + l*H*H;
+        float* l_ln2w = params.ln2w + l*H; 
+        float* l_mlpw = params.mlpw + l*H*4*H; 
+        float* l_mlp_projw = params.mlp_projw + l*4*H*H; 
+        // get the pointers of the gradients of weights for the current layer
+        float* dl_ln1w = param_grads.ln1w + l*H;
+        float* dl_ln1b = param_grads.ln1b + l*H;
+        float* dl_qkvw = param_grads.qkvw + l*H*3*H; 
+        float* dl_qkvb = param_grads.qkvb + l*3*H;
+        float* dl_attn_projw = param_grads.attn_projw + l*H*H;
+        float* dl_attn_projb = param_grads.attn_projb + l*H; 
+        float* dl_ln2w = param_grads.ln2w + l*H; 
+        float* dl_ln2b = param_grads.ln2b + l*H;
+        float* dl_mlpw = param_grads.mlpw + l*H*4*H; 
+        float* dl_mlpb = param_grads.mlpb + l*4*H; 
+        float* dl_mlp_projw = param_grads.mlp_projw + l*4*H*H; 
+        float* dl_mlp_projb = param_grads.mlp_projb + l*H;
 
+        // get the pointers of the activations for the current layer
+        float* l_ln1_mean = acts.ln1_mean + l*B*T; 
+        float* l_ln1_rstd = acts.ln1_rstd + l*B*T; 
+        float* l_ln1 = acts.ln1 + l*B*T*H; 
+        float* l_qkv = acts.qkv + l*B*T*3*H; 
+        float* l_attn = acts.attn + l*B*NH*T*T; 
+        float* l_attn_y = acts.attn_y + l*B*T*H; 
+        float* l_resi_attn = acts.resi_attn + l*B*T*H; 
+        float* l_ln2_mean = acts.ln2_mean + l*B*T;
+        float* l_ln2_rstd = acts.ln2_rstd + l*B*T;
+        float* l_ln2 = acts.ln2 + l*B*T*H; 
+        float* l_mlph = acts.mlph + l*B*T*4*H;
+        float* l_mlph_gelu = acts.mlph_gelu + l*B*T*4*H; 
+        // get the pointers of the gradients of activations for the current layer
+        float* dl_ln1 = acts_grads.ln1 + l*B*T*H; 
+        float* dl_qkv = acts_grads.qkv + l*B*T*3*H; 
+        float* dl_preattn = acts_grads.preattn + l*B*NH*T*T; 
+        float* dl_attn = acts_grads.attn + l*B*NH*T*T; 
+        float* dl_attn_y = acts_grads.attn_y + l*B*T*H; 
+        float* dl_attn_proj = acts_grads.attn_proj + l*B*T*H; 
+        float* dl_resi_attn = acts_grads.resi_attn + l*B*T*H; 
+        float* dl_ln2 = acts_grads.ln2 + l*B*T*H; 
+        float* dl_mlph = acts_grads.mlph + l*B*T*4*H;
+        float* dl_mlph_gelu = acts_grads.mlph_gelu + l*B*T*4*H; 
+        float* dl_mlp_proj = acts_grads.mlp_proj + l*B*T*H;
+        float* dl_resi_mlp = acts_grads.resi_mlp + l*B*T*H;
+
+        residual_backward(dl_mlp_proj, dl_resi_attn, dl_resi_mlp, B*T*H);
+        matmul_backward(l_mlph_gelu, l_mlp_projw, dl_mlph_gelu, dl_mlp_projw, dl_mlp_projb, dl_mlp_proj, B, T, 4*H, H);
+        gelu_backward(l_mlph, dl_mlph, dl_mlph_gelu, B*T*4*H);
+        matmul_backward(l_ln2, l_mlpw, dl_ln2, dl_mlpw, dl_mlpb, dl_mlph, B, T, H, 4*H);
+        layernorm_backward(l_resi_attn, l_ln2_mean, l_ln2_rstd, l_ln2w, dl_resi_attn, dl_ln2w, dl_ln2b, dl_ln2, B, T, H);
+        residual_backward(dl_attn_proj, dresidual, dl_resi_attn, B*T*H);
+        matmul_backward(l_attn_y, l_attn_projw, dl_attn_y, dl_attn_projw, dl_attn_projb, dl_attn_proj, B, T, H, H);
+        attention_backward(l_qkv, l_attn, dl_qkv, dl_preattn, dl_attn, dl_attn_y, B, T, H, NH);
+        matmul_backward(l_ln1, l_qkvw, dl_ln1, dl_qkvw, dl_qkvb, dl_qkv, B, T, H, 3*H);
+        layernorm_backward(residual, l_ln1_mean, l_ln1_rstd, l_ln1w, dresidual, dl_ln1w, dl_ln1b, dl_ln1, B, T, H);
+    }
+    embeddings_backward(acts.patch_embd, acts_grads.patch_embd, param_grads.cls_token, param_grads.pos_embd, acts_grads.encoded, B, NP, H, im_H/P, im_W/P);
+    conv2d_backward(model->inputs, params.patch_embd_kernal, NULL, param_grads.patch_embd_kernal, param_grads.patch_embd_bias, acts_grads.patch_embd, B, im_C, im_H, im_W, H, P, P, P);
 }
