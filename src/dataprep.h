@@ -4,6 +4,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <dirent.h>
+#include <time.h>
+#include <stdbool.h>
 
 struct BGR{
     // bmp color channel order
@@ -18,6 +20,8 @@ struct BGR{
 // @param width         width of the bmp image.
 // @param height        height of the bmp image.
 // @param pixels        pixels extracted from the bmp image.
+//
+// @return              error code (i.e., -1 if error, 0 if successful)
 //
 inline int BMPReader(const char* filename, const int width, const int height, BGR** pixels){
     FILE* file = fopen(filename, "rb");
@@ -60,6 +64,8 @@ inline int BMPReader(const char* filename, const int width, const int height, BG
 // @param nImages       number of bmp images inside the folder.
 // @param width         width of the bmp image.
 // @param height        height of the bmp image.
+//
+// @return              error code (i.e., -1 if error, 0 if successful)
 //
 inline int ReadAllBMPsInDirectory(const char* dirPath, BGR*** allPixels, int& nImages, const int width, const int height){
     DIR* dir = opendir(dirPath);
@@ -112,6 +118,8 @@ inline int ReadAllBMPsInDirectory(const char* dirPath, BGR*** allPixels, int& nI
 // @param nImages       number of bmp images inside the folder.
 // @param labels        labels extracted from the txt file.
 //
+// @return              error code (i.e., -1 if error, 0 if successful)
+//
 inline int LabelReader(const char* filename, const int nImages, int** labels){
     FILE* file = fopen(filename, "r");
     if(!file){
@@ -143,4 +151,84 @@ inline int LabelReader(const char* filename, const int nImages, int** labels){
     return 0;
 }
 
+// Function to shuffle the images and labels
+//
+// @param allPixels     pixels extracted from all the bmp image.
+// @param labels        labels extracted from the txt file.
+// @param nImages       number of bmp images inside the folder.
+// @param seed          random seed for reproduciblity
+//
+inline void ShuffleData(BGR** allPixels, int* labels, int nImages, unsigned int seed){
+    srand(seed);
+
+    // If one element has already swapped it position, we don't want it to be swapped again.
+    // This is more for the operational budget reduction. 
+    bool* swapped = (bool*)malloc(nImages*sizeof(bool));
+    if (swapped == NULL) {
+        perror("Unable to allocate memory for tracking switched elements");
+        return;
+    }
+    memset(swapped, false, nImages*sizeof(bool));
+
+    for(int i=nImages-1; i>0; --i){
+        int j = rand() % (i + 1);
+
+        // Ensure the elements in current comparison
+        // have never been swapped before.
+        if(!swapped[i] && !swapped[j] && i != j){
+            BGR* currImg = allPixels[i];
+            allPixels[i] = allPixels[j];
+            allPixels[j] = currImg;
+
+            int currLabel = labels[i];
+            labels[i] = labels[j];
+            labels[j] = currLabel;
+
+            swapped[i] = true;
+            swapped[j] = true;
+        }
+    }
+
+    free(swapped);
+}
+
+// Convert BGR double pointer to a single float pointer.
+//
+// @param allPixels     pixels extracted from all the bmp image.
+// @param nImages       number of bmp images inside the folder.
+// @param width         width of the bmp image.
+// @param height        height of the bmp image.
+// @param channels      number of channels.
+// @param data          all pixels linearized to 1D float points
+//
+// @return              error code (i.e., -1 if error, 0 if successful)
+//
+inline int ConvertTo1DFloatArray(BGR** allPixels, int nImages, int width, int height, int channels, float** data){
+
+    *data = (float*)malloc(nImages*channels*height*width*sizeof(float));
+    if (*data == NULL) {
+        perror("Unable to allocate memory for linearized data");
+        return -1;
+    }
+
+    for(int b=0; b<nImages; ++b){
+        for(int y=0; y<height; ++y){
+            for(int x=0; x<width; ++x){
+                int pxl_Idx = y*width + x;
+
+                // Indices for R, G, B pixels
+                // Each pixel is normalized to values [0, 1]
+                int R_idx = b*channels*height*width + 0*height*width + pxl_Idx;
+                int G_idx = b*channels*height*width + 1*height*width + pxl_Idx;
+                int B_idx = b*channels*height*width + 2*height*width + pxl_Idx;
+
+                (*data)[R_idx] = static_cast<float>(allPixels[b][pxl_Idx].red)/255.f;
+                (*data)[G_idx] = static_cast<float>(allPixels[b][pxl_Idx].green)/255.f;
+                (*data)[B_idx] = static_cast<float>(allPixels[b][pxl_Idx].blue)/255.f;
+            }
+        }
+    }
+
+    return 0;
+}
 
