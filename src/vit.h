@@ -192,3 +192,14 @@ void ViT_backward(ViTModel* model);
 // @param t             Current gradient step
 void ViT_update(ViTModel* model, float learning_rate, float beta1, float beta2, float eps, float weight_decay, int t);
 
+// Freeing the allocated memories.
+inline void ViT_free(ViTModel* model){
+    free(model->params_memory);
+    free(model->params_grads_memory);
+    free(model->m_memory);
+    free(model->v_memory);
+    free(model->acts_memory);
+    free(model->acts_grads_memory);
+    free(model->inputs);
+    free(model->targets);
+}
