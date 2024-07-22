@@ -149,11 +149,17 @@ typedef struct{
     ActivationTensors acts_grads;
     float* acts_grads_memory;
 
-    // Other run state configurations
+    // Other run state configurations (training data)
     int batch_size;
     float* inputs;
     int* targets;
     float mean_loss;
+
+    // configurations (test data)
+    int batch_size_test;
+    float* inputs_test;
+    int* targets_test;
+    float mean_loss_test;
     
 } ViTModel;
 
@@ -210,6 +216,7 @@ inline void ViT_free(ViTModel* model){
 // Then preprocess the read data accordingly, 
 // and chunk them to linearized batches.
 // 
+// @param model         Model config for the current ViT model. 
 // @param config        ViTConfig file
 // @param data_dir      Directory where train/test dataset and labels are stored.
 //                      .bmp images and label.txt files should exist under `data_dir/train`
@@ -219,4 +226,4 @@ inline void ViT_free(ViTModel* model){
 //                      e.g., To access the first address of i-th image pixels, data = pxl_data[(i-1)*C*H*W]
 // @param labels        Linearized target labels.
 //
-void dataloader(ViTConfig* config, const char* data_dir, float* pxl_data, int* labels);
+void dataloader(ViTModel *model, ViTConfig* config, const char* data_dir, float* pxl_data, int* labels);

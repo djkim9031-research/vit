@@ -278,7 +278,7 @@ void ViT_update(ViTModel* model, float learning_rate, float beta1, float beta2, 
 }
 
 
-void dataloader(ViTConfig* config, const char* data_dir, float* pxl_data, int* labels){
+void dataloader(ViTModel *model, ViTConfig* config, const char* data_dir, float* pxl_data, int* labels){
 
     const char* train_folder_name = "train/";
     const char* test_folder_name = "test/";
@@ -335,10 +335,14 @@ void dataloader(ViTConfig* config, const char* data_dir, float* pxl_data, int* l
         }
     }
 
-    // Linearize BGR** to float*
-    // Shuffle (image/label) pairs
+    // Shuffle train (image/label) pairs
+    ShuffleData(allPixels_train, allLabels_train, nImages_train, 42);
 
+    // Linearize train and test dataset
+    ConvertTo1DFloatArray(allPixels_train, nImages_train, width, height, config->channels, &(model->inputs));
+    ConvertTo1DFloatArray(allPixels_test, nImages_test, width, height, config->channels, &(model->inputs_test));
 
+    // Deallocate temporary data defined within the function.
     free(train_path);
     free(test_path);
     free(train_label_path);
