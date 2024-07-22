@@ -276,3 +276,71 @@ void ViT_update(ViTModel* model, float learning_rate, float beta1, float beta2, 
         model->params_memory[i] -= learning_rate * (m_hat / (sqrtf(v_hat) + eps) + weight_decay * param);
     }
 }
+
+
+void dataloader(ViTConfig* config, const char* data_dir, float* pxl_data, int* labels){
+
+    const char* train_folder_name = "train/";
+    const char* test_folder_name = "test/";
+    const char* label_name = "labels.txt";
+
+    size_t train_dir_len = strlen(data_dir) + strlen(train_folder_name) + 1;
+    size_t test_dir_len = strlen(data_dir) + strlen(test_folder_name) + 1;
+    size_t train_label_path_len = strlen(data_dir) + strlen(train_folder_name) + strlen(label_name) + 1;
+    size_t test_label_path_len = strlen(data_dir) + strlen(test_folder_name) + strlen(label_name) + 1;
+
+    char* train_path = (char*)malloc(train_dir_len*sizeof(char));
+    char* test_path = (char*)malloc(test_dir_len*sizeof(char));
+    char* train_label_path = (char*)malloc(train_label_path_len*sizeof(char));
+    char* test_label_path = (char*)malloc(test_label_path_len*sizeof(char));
+
+    if(train_path == NULL || test_path == NULL || 
+       train_label_path == NULL || test_label_path == NULL){
+        fprintf(stderr, "Creating data path failed.\n");
+    }
+
+    strcpy(train_path, data_dir);
+    strcpy(test_path, data_dir);
+    strcpy(train_label_path, data_dir);
+    strcpy(test_label_path, data_dir);
+    strcat(train_path, train_folder_name);
+    strcat(test_path, test_folder_name);
+    strcat(train_label_path, train_folder_name);
+    strcat(test_label_path, test_folder_name);
+    strcat(train_label_path, label_name);
+    strcat(test_label_path, label_name);
+
+    int width = config->image_width;
+    int height = config->image_height;
+    int nImages_train = 0;
+    int nImages_test = 0;
+    BGR** allPixels_train = NULL;
+    BGR** allPixels_test = NULL;
+    int* allLabels_train = NULL;
+    int* allLabels_test = NULL;
+
+    // Reading the train data
+    if(ReadAllBMPsInDirectory(train_path, &allPixels_train, nImages_train, width, height)==0){
+        printf("successfully read all the BMP files - train data.\n");
+        if(LabelReader(train_label_path, nImages_train, &allLabels_train)==0){
+            printf("successfully read all the labels - train data.\n");
+        }
+    }
+
+    // Reading the test data
+    if(ReadAllBMPsInDirectory(test_path, &allPixels_test, nImages_test, width, height)==0){
+        printf("successfully read all the BMP files - test data.\n");
+        if(LabelReader(test_label_path, nImages_test, &allLabels_test)==0){
+            printf("successfully read all the labels - test data.\n");
+        }
+    }
+
+    // Linearize BGR** to float*
+    // Shuffle (image/label) pairs
+
+
+    free(train_path);
+    free(test_path);
+    free(train_label_path);
+    free(test_label_path);
+}

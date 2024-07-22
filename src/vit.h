@@ -13,6 +13,7 @@
 #include "residual.h"
 #include "activations.h"
 #include "softmax.h"
+#include "dataprep.h"
 
 #define NUM_PARAMETER_TENSORS 18
 typedef struct{
@@ -203,3 +204,19 @@ inline void ViT_free(ViTModel* model){
     free(model->inputs);
     free(model->targets);
 }
+
+// Dataloader function.
+// It will read the image dataset as linearized 1D array and labels.
+// Then preprocess the read data accordingly, 
+// and chunk them to linearized batches.
+// 
+// @param config        ViTConfig file
+// @param data_dir      Directory where train/test dataset and labels are stored.
+//                      .bmp images and label.txt files should exist under `data_dir/train`
+//                      and `data_dir/test` folders.
+// @param pxl_data      Linearized data. Stored in the order of linearized shape:
+//                      [num_images, num_channels, img_h, img_w]
+//                      e.g., To access the first address of i-th image pixels, data = pxl_data[(i-1)*C*H*W]
+// @param labels        Linearized target labels.
+//
+void dataloader(ViTConfig* config, const char* data_dir, float* pxl_data, int* labels);
