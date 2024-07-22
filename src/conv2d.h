@@ -102,8 +102,10 @@ inline void conv2d_backward(float* x, float* kernel,
                                     // (elementwise) dL/dkernel = y'*x
                                     #pragma omp atomic
                                     dkernel[oc*C*KH*KW + ic*KH*KW + kh*KW + kw] += curr_x*grad;
-                                    #pragma omp atomic
-                                    dx[b*H*W*C + ic*H*W + ih*W + iw] += kernel[oc*C*KH*KW + ic*KH*KW + kh*KW + kw]*grad;
+                                    if(dx != NULL){
+                                        #pragma omp atomic
+                                        dx[b*H*W*C + ic*H*W + ih*W + iw] += kernel[oc*C*KH*KW + ic*KH*KW + kh*KW + kw]*grad;
+                                    }
                                 }
                             }
                         }
