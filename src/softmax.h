@@ -37,8 +37,8 @@ inline void softmax_forward(float* logits, float* probs,
 // @param B             number of batches
 // @param NC            number of classes
 //
-void crossentropy_forward(float* probs, int* targets, float* losses,
-                          int B, int NC){
+inline void crossentropy_forward(float* probs, int* targets, float* losses,
+                                 int B, int NC){
     for(int b=0; b<B; ++b){
         // loss = -log(probs_pred)
         int cls_idx = targets[b];
@@ -55,9 +55,9 @@ void crossentropy_forward(float* probs, int* targets, float* losses,
 // @param B             number of batches
 // @param NC            number of classes
 //
-void crossentropy_softmax_backward(float* probs, int* targets,
-                                   float* dlogits, float* dlosses,
-                                   int B, int NC){
+inline void crossentropy_softmax_backward(float* probs, int* targets,
+                                          float* dlogits, float* dlosses,
+                                          int B, int NC){
     for(int b=0; b<B; ++b){
         float dloss = dlosses[b];
         int cls_idx = targets[b];

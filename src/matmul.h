@@ -77,8 +77,8 @@ inline void matmul_backward(float* x, float* weight, float* dx, float* dweight, 
 // @param H             hidden dimension size
 // @param t             index t in the sequence T to be sliced
 //
-void slice_tensor_at_t(float* orig, float* extracted,
-                       int B, int T, int H, int t){
+inline void slice_tensor_at_t(float* orig, float* extracted,
+                              int B, int T, int H, int t){
     for(int b=0; b<B; ++b){
         for(int h=0; h<H; ++h){
             extracted[b*H + h] = orig[b*T*H + t*H + h]; 
@@ -100,8 +100,8 @@ void slice_tensor_at_t(float* orig, float* extracted,
 // @param NC            number of classes
 // @param t             index t in the sequence T to be sliced 
 //
-void matmul_forward_with_slicing_at_t(float* x, float* y, float* weight, float* bias,
-                                      int B, int T, int H, int NC, int t){
+inline void matmul_forward_with_slicing_at_t(float* x, float* y, float* weight, float* bias,
+                                             int B, int T, int H, int NC, int t){
     // Allocate memory for the sliced tensor
     float* extracted_x = (float*)malloc(B*H*sizeof(float));
     // Extract at index t
@@ -128,8 +128,8 @@ void matmul_forward_with_slicing_at_t(float* x, float* y, float* weight, float* 
 // @param NC            number of classes
 // @param t             index t in the sequence T to be sliced 
 //
-void matmul_backward_with_slicing_at_t(float* x, float* weight, float* dx, float* dweight, float* dbias,
-                                       float* dy, int B, int T, int H, int NC, int t){
+inline void matmul_backward_with_slicing_at_t(float* x, float* weight, float* dx, float* dweight, float* dbias,
+                                              float* dy, int B, int T, int H, int NC, int t){
     
     // Allocate memory for the sliced tensor and its gradient
     float* extracted_x = (float*)malloc(B*H*sizeof(float));
