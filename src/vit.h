@@ -38,7 +38,7 @@ typedef struct{
 } ParameterTensors;
 
 // Allocate memory for the parameters and point the individual tensors to the right places
-float* malloc_and_point_parameters(ParameterTensors* params, size_t* param_sizes){
+inline float* malloc_and_point_parameters(ParameterTensors* params, size_t* param_sizes){
     size_t num_parameters = 0;
     for(size_t i=0; i<NUM_PARAMETER_TENSORS; ++i){
         num_parameters += param_sizes[i];
@@ -89,7 +89,7 @@ typedef struct{
 } ActivationTensors;
 
 // Allocate memory for the activation tensors and point the individual tensors to the right places
-float* malloc_and_point_activations(ActivationTensors* acts, size_t* act_sizes){
+inline float* malloc_and_point_activations(ActivationTensors* acts, size_t* act_sizes){
     size_t num_activations = 0;
     for(size_t i=0; i<NUM_ACTIVATION_TENSORS; ++i){
         num_activations += act_sizes[i];
@@ -154,12 +154,16 @@ typedef struct{
     float* inputs;
     int* targets;
     float mean_loss;
+    int nImages;
+    int curr_batch_idx;
 
     // configurations (test data)
     int batch_size_test;
     float* inputs_test;
     int* targets_test;
     float mean_loss_test;
+    int nImages_test;
+    int curr_batch_idx_test;
     
 } ViTModel;
 
@@ -217,13 +221,8 @@ inline void ViT_free(ViTModel* model){
 // and chunk them to linearized batches.
 // 
 // @param model         Model config for the current ViT model. 
-// @param config        ViTConfig file
 // @param data_dir      Directory where train/test dataset and labels are stored.
 //                      .bmp images and label.txt files should exist under `data_dir/train`
 //                      and `data_dir/test` folders.
-// @param pxl_data      Linearized data. Stored in the order of linearized shape:
-//                      [num_images, num_channels, img_h, img_w]
-//                      e.g., To access the first address of i-th image pixels, data = pxl_data[(i-1)*C*H*W]
-// @param labels        Linearized target labels.
 //
-void dataloader(ViTModel *model, ViTConfig* config, const char* data_dir, float* pxl_data, int* labels);
+void dataloader(ViTModel *model, const char* data_dir);
