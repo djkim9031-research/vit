@@ -278,7 +278,7 @@ void ViT_update(ViTModel* model, float learning_rate, float beta1, float beta2, 
 }
 
 
-void dataloader(ViTModel *model, const char* data_dir){
+void dataloader(ViTModel* model, const char* data_dir){
 
     const char* train_folder_name = "train/";
     const char* test_folder_name = "test/";
@@ -319,7 +319,7 @@ void dataloader(ViTModel *model, const char* data_dir){
     // Reading the train data
     if(ReadAllBMPsInDirectory(train_path, &allPixels_train, model->nImages, width, height)==0){
         printf("successfully read all the BMP files - train data.\n");
-        if(LabelReader(train_label_path, model->nImages, &(model->targets))==0){
+        if(LabelReader(train_label_path, model->nImages, &(model->labels_train))==0){
             printf("successfully read all the labels - train data.\n");
         }
     }
@@ -327,17 +327,17 @@ void dataloader(ViTModel *model, const char* data_dir){
     // Reading the test data
     if(ReadAllBMPsInDirectory(test_path, &allPixels_test, model->nImages_test, width, height)==0){
         printf("successfully read all the BMP files - test data.\n");
-        if(LabelReader(test_label_path, model->nImages_test, &(model->targets_test))==0){
+        if(LabelReader(test_label_path, model->nImages_test, &(model->labels_test))==0){
             printf("successfully read all the labels - test data.\n");
         }
     }
 
     // Shuffle train (image/label) pairs
-    ShuffleData(allPixels_train, model->targets, model->nImages, 42);
+    ShuffleData(allPixels_train, model->labels_train, model->nImages, 42);
 
     // Linearize train and test dataset
-    ConvertTo1DFloatArray(allPixels_train, model->nImages, width, height, channels, &(model->inputs));
-    ConvertTo1DFloatArray(allPixels_test, model->nImages_test, width, height, channels, &(model->inputs_test));
+    ConvertTo1DFloatArray(allPixels_train, model->nImages, width, height, channels, &(model->data_train));
+    ConvertTo1DFloatArray(allPixels_test, model->nImages_test, width, height, channels, &(model->data_test));
 
     // Deallocate temporary data defined within the function.
     for(int i=0; i<model->nImages; ++i){
@@ -352,4 +352,20 @@ void dataloader(ViTModel *model, const char* data_dir){
     free(test_path);
     free(train_label_path);
     free(test_label_path);
+}
+
+void GetBatch(ViTModel* model, float* batch_data, int* batch_labels){
+    int start_b_idx = model->curr_batch_idx;
+    int end_b_idx = start_b_idx + model->batch_size > model->nImages ? model->nImages : start_b_idx + model->batch_size;
+
+    int channels = model->config.channels;
+    int height = model->config.image_height;
+    int width = model->config.image_width;
+
+    for(int b=start_b_idx; b<end_b_idx; ++b){
+        int data_idx = b*channels*height*width;
+        int batch_idx = (b-start_b_idx)*channels*height*width;
+        memcpy(&batch_data[batch_idx], &(model->data_train[data_idx]), channels * width * height * sizeof(float));
+        batch_labels[b-start_b_idx] = model->labels_train[b];
+    }
 }

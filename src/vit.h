@@ -151,19 +151,23 @@ typedef struct{
 
     // Other run state configurations (training data)
     int batch_size;
+    int curr_batch_idx;
     float* inputs;
     int* targets;
     float mean_loss;
     int nImages;
-    int curr_batch_idx;
 
     // configurations (test data)
-    int batch_size_test;
     float* inputs_test;
     int* targets_test;
     float mean_loss_test;
     int nImages_test;
-    int curr_batch_idx_test;
+
+    // Entirety of data
+    float* data_train;
+    float* data_test;
+    int* labels_train;
+    int* labels_test;
     
 } ViTModel;
 
@@ -213,6 +217,12 @@ inline void ViT_free(ViTModel* model){
     free(model->acts_grads_memory);
     free(model->inputs);
     free(model->targets);
+    free(model->inputs_test);
+    free(model->targets_test);
+    free(model->data_train);
+    free(model->data_test);
+    free(model->labels_train);
+    free(model->labels_test);
 }
 
 // Dataloader function.
@@ -225,4 +235,15 @@ inline void ViT_free(ViTModel* model){
 //                      .bmp images and label.txt files should exist under `data_dir/train`
 //                      and `data_dir/test` folders.
 //
-void dataloader(ViTModel *model, const char* data_dir);
+void dataloader(ViTModel* model, const char* data_dir);
+
+// Function to get the batch of data in sequential order.
+// In the `dataloader`, all the pixel data and labels are extracted and shuffled.
+// Therefore, in this function call, batch data are extracted sequentially from the entirety of the dataset.
+// The sequential batch is tracked with `curr_batch_idx` inside the ViTModel struct.
+//
+// @param model         Model config for the current ViT model. 
+// @param batch_data    Linearized batch pixel data input (batch_size, channel, height, width)
+// @param batch_labels  Linearized batch target (batch_size, cls_idx)
+// 
+void GetBatch(ViTModel* model, float* batch_data, int* batch_labels);
