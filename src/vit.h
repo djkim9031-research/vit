@@ -5,6 +5,7 @@
 #include <assert.h>
 #include <string.h>
 
+#include "utils.h"
 #include "conv2d.h"
 #include "embeddings.h"
 #include "layernorm.h"
@@ -183,28 +184,28 @@ inline void ViT_zero_grad(ViTModel* model){
 
 // ViT forward function
 //
-// @param model         Model config for the current ViT model.
-// @param inputs        linearized input tensors (B, C, H, W)
-// @param targets       linearized ground truth label tensors (B, 1, 1)
-// @param B             number of batches
+// @param model                 Model config for the current ViT model.
+// @param inputs                linearized input tensors (B, C, H, W)
+// @param targets               linearized ground truth label tensors (B, 1, 1)
+// @param B                     number of batches
 //
 void ViT_forward(ViTModel* model, float* inputs, int* targets, int B);
 
 // ViT backward function
 //
-// @param model         Model config for the current ViT model.
+// @param model                 Model config for the current ViT model.
 void ViT_backward(ViTModel* model);
 
 // ViT update function. This is called once the forward-backward pass are made, and works as an AdamW optimizer.
 // reference: https://pytorch.org/docs/stable/generated/torch.optim.AdamW.html
 //
-// @param model         Model config for the current ViT model.
-// @param learning_rate Learning rate of the optimizer
-// @param beta1         First coefficient to compute running averages of gradients and its square
-// @param beta2         Second coefficient to compute running averages of gradients and its square
-// @param eps           Term added to the denominator to improve numerical stability
-// @param weight_decay  Weight decay coefficient
-// @param t             Current gradient step
+// @param model                 Model config for the current ViT model.
+// @param learning_rate         Learning rate of the optimizer
+// @param beta1                 First coefficient to compute running averages of gradients and its square
+// @param beta2                 Second coefficient to compute running averages of gradients and its square
+// @param eps                   Term added to the denominator to improve numerical stability
+// @param weight_decay          Weight decay coefficient
+// @param t                     Current gradient step
 void ViT_update(ViTModel* model, float learning_rate, float beta1, float beta2, float eps, float weight_decay, int t);
 
 // Freeing the allocated memories.
@@ -230,10 +231,10 @@ inline void ViT_free(ViTModel* model){
 // Then preprocess the read data accordingly, 
 // and chunk them to linearized batches.
 // 
-// @param model         Model config for the current ViT model. 
-// @param data_dir      Directory where train/test dataset and labels are stored.
-//                      .bmp images and label.txt files should exist under `data_dir/train`
-//                      and `data_dir/test` folders.
+// @param model                 Model config for the current ViT model. 
+// @param data_dir              Directory where train/test dataset and labels are stored.
+//                              .bmp images and label.txt files should exist under `data_dir/train`
+//                              and `data_dir/test` folders.
 //
 void Dataloader(ViTModel* model, const char* data_dir);
 
@@ -242,8 +243,14 @@ void Dataloader(ViTModel* model, const char* data_dir);
 // Therefore, in this function call, batch data are extracted sequentially from the entirety of the dataset.
 // The sequential batch is tracked with `curr_batch_idx` inside the ViTModel struct.
 //
-// @param model         Model config for the current ViT model. 
-// @param batch_data    Linearized batch pixel data input (batch_size, channel, height, width)
-// @param batch_labels  Linearized batch target (batch_size, cls_idx)
+// @param model                 Model config for the current ViT model. 
+// @param batch_data            Linearized batch pixel data input (batch_size, channel, height, width)
+// @param batch_labels          Linearized batch target (batch_size, cls_idx)
 // 
 void GetBatch(ViTModel* model, float* batch_data, int* batch_labels);
+
+// Build the ViT model from YAML file.
+//
+// @param model                 Model config for the current ViT model. 
+// @param yaml_path             Path to the YAML file.
+void ViT_from_YAML(ViTModel* model, const char* yaml_path);

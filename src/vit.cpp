@@ -369,3 +369,36 @@ void GetBatch(ViTModel* model, float* batch_data, int* batch_labels){
         batch_labels[b-start_b_idx] = model->labels_train[b];
     }
 }
+
+void ViT_from_YAML(ViTModel* model, const char* yaml_path){
+
+    FILE* file = fopen(yaml_path, "r");
+    if(!file){
+        perror("Unable to open YAML file");
+        return;
+    }
+
+    char line[256];
+    while(fgets(line, sizeof(line), file)){
+        char* trimmed_line = trim_whitespace(line);
+        if(strncmp(trimmed_line, "image_width:", 12)==0){
+            model->config.image_width = parse_int_value(trimmed_line);
+        } else if (strncmp(trimmed_line, "image_height:", 13) == 0) {
+            model->config.image_height = parse_int_value(trimmed_line);
+        } else if (strncmp(trimmed_line, "channels:", 9) == 0) {
+            model->config.channels = parse_int_value(trimmed_line);
+        } else if (strncmp(trimmed_line, "patch_size:", 11) == 0) {
+            model->config.patch_size = parse_int_value(trimmed_line);
+        } else if (strncmp(trimmed_line, "hidden_size:", 12) == 0) {
+            model->config.hidden_size = parse_int_value(trimmed_line);
+        } else if (strncmp(trimmed_line, "num_attention_heads:", 20) == 0) {
+            model->config.num_attention_heads = parse_int_value(trimmed_line);
+        } else if (strncmp(trimmed_line, "num_layers:", 11) == 0) {
+            model->config.num_layers = parse_int_value(trimmed_line);
+        } else if (strncmp(trimmed_line, "num_classes:", 12) == 0) {
+            model->config.num_classes = parse_int_value(trimmed_line);
+        } else if (strncmp(trimmed_line, "batch_size:", 11) == 0) {
+            model->batch_size = parse_int_value(trimmed_line);
+        } 
+    }
+}
