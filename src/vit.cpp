@@ -278,7 +278,7 @@ void ViT_update(ViTModel* model, float learning_rate, float beta1, float beta2, 
 }
 
 
-void dataloader(ViTModel* model, const char* data_dir){
+void Dataloader(ViTModel* model, const char* data_dir){
 
     const char* train_folder_name = "train/";
     const char* test_folder_name = "test/";

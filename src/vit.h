@@ -235,7 +235,7 @@ inline void ViT_free(ViTModel* model){
 //                      .bmp images and label.txt files should exist under `data_dir/train`
 //                      and `data_dir/test` folders.
 //
-void dataloader(ViTModel* model, const char* data_dir);
+void Dataloader(ViTModel* model, const char* data_dir);
 
 // Function to get the batch of data in sequential order.
 // In the `dataloader`, all the pixel data and labels are extracted and shuffled.
