@@ -59,3 +59,20 @@ def load_experiment(experiment_name, checkpoint_name="model_final.pt", base_dir=
     cpfile = os.path.join(outdir, checkpoint_name)
     model.load_state_dict(torch.load(cpfile))
     return config, model, train_losses, test_losses, accuracies
+
+def visualize_images():
+    trainset = torchvision.datasets.CIFAR10(root='./data', train=True,
+                                            download=True)
+    classes = ('plane', 'car', 'bird', 'cat',
+            'deer', 'dog', 'frog', 'horse', 'ship', 'truck')
+    # Pick 30 samples randomly
+    indices = torch.randperm(len(trainset))[:30]
+    images = [np.asarray(trainset[i][0]) for i in indices]
+    labels = [trainset[i][1] for i in indices]
+    # Visualize the images using matplotlib
+    fig = plt.figure(figsize=(10, 10))
+    for i in range(30):
+        ax = fig.add_subplot(6, 5, i+1, xticks=[], yticks=[])
+        ax.imshow(images[i])
+        ax.set_title(classes[labels[i]])
+
