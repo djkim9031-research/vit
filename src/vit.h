@@ -254,3 +254,9 @@ void GetBatch(ViTModel* model, float* batch_data, int* batch_labels);
 // @param model                 Model config for the current ViT model. 
 // @param yaml_path             Path to the YAML file.
 void ViT_from_YAML(ViTModel* model, const char* yaml_path);
+
+// Initialize ViT model after the YAML read call.
+//
+// @param model                 Model config for the current ViT model. 
+//
+void ViT_init(ViTModel* model);

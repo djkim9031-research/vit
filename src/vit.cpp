@@ -368,6 +368,9 @@ void GetBatch(ViTModel* model, float* batch_data, int* batch_labels){
         memcpy(&batch_data[batch_idx], &(model->data_train[data_idx]), channels * width * height * sizeof(float));
         batch_labels[b-start_b_idx] = model->labels_train[b];
     }
+
+    // Update curr_batch_idx
+    model->curr_batch_idx = end_b_idx;
 }
 
 void ViT_from_YAML(ViTModel* model, const char* yaml_path){
@@ -401,4 +404,89 @@ void ViT_from_YAML(ViTModel* model, const char* yaml_path){
             model->batch_size = parse_int_value(trimmed_line);
         } 
     }
+
+    printf("------------------------------------------------------------------------\n");
+    printf("Read ViT config values: \n");
+    printf("image_width: %d\n", model->config.image_width);
+    printf("image_height: %d\n", model->config.image_height);
+    printf("image_channels: %d\n", model->config.channels);
+    printf("patch_size: %d\n", model->config.patch_size);
+    printf("hidden_size: %d\n", model->config.hidden_size);
+    printf("num_attention_heads: %d\n", model->config.num_attention_heads);
+    printf("num_layers: %d\n", model->config.num_layers);
+    printf("num_classes: %d\n", model->config.num_classes);
+    printf("batch_size: %d\n", model->batch_size);
+}
+
+void ViT_init(ViTModel* model){
+
+    printf("------------------------------------------------------------------------\n");
+    printf("Initializing the ViT model...\n");
+
+    // Initialize the curr_batch_idx
+    model->curr_batch_idx = 0;
+
+    // Initialize the loss params.
+    model->mean_loss = 0.f;
+    model->mean_loss_test = 0.f;
+
+    // Number parameters
+    int NC = model->config.num_classes;
+    int NL = model->config.num_layers;
+    int im_C = model->config.channels;
+    int im_H = model->config.image_height;
+    int im_W = model->config.image_width;
+    int H = model->config.hidden_size;
+    int P = model->config.patch_size;
+
+    // Sanity check
+    assert(im_W%P==0 && im_H&P==0);
+
+    int NP = (im_W/P)*(im_H/P); // number of patches 
+    int T = NP + 1; // sequence length (+1 corresponds to cls_token)
+
+
+    // Allocate space for all the parameters and read them in.
+    model->param_sizes[0] = H*im_C*NP; // NP = patch_height * patch_width,  patch_embd_kernal
+    model->param_sizes[1] = H; // patch_embd_bias
+    model->param_sizes[2] = H; // cls_token
+    model->param_sizes[3] = (1+NP)*H; // pos_embd
+    model->param_sizes[4] = NL*H; // ln1w
+    model->param_sizes[5] = NL*H; // ln1b
+    model->param_sizes[6] = NL*H*3*H; // qkvw
+    model->param_sizes[7] = NL*3*H; //qkvb
+    model->param_sizes[8] = NL*H*H; // attn_projw
+    model->param_sizes[9] = NL*H; // attn_projb
+    model->param_sizes[10] = NL*H; // ln2w
+    model->param_sizes[11] = NL*H; // ln2b
+    model->param_sizes[12] = NL*H*4*H; // mlpw
+    model->param_sizes[13] = NL*4*H; // mlpb
+    model->param_sizes[14] = NL*4*H*H; // mlp_projw
+    model->param_sizes[15] = NL*H; // mlp_projb
+    model->param_sizes[16] = H*NC; // clsw
+    model->param_sizes[17] = NC; // clsb
+
+    // Count the number of parameters
+    size_t num_parameters = 0;
+    for(size_t i=0; i<NUM_PARAMETER_TENSORS; ++i){
+        num_parameters += model->param_sizes[i];
+    }
+    printf("num_parameters: %zu\n", num_parameters);
+    model->num_params = num_parameters;
+
+    // Get the memory allocation and mapping
+    model->params_memory = malloc_and_point_parameters(&model->params, model->param_sizes);
+
+    // Other inits
+    model->acts_memory = NULL;
+    model->params_grads_memory = NULL;
+    model->acts_grads_memory = NULL;
+
+    model->m_memory = NULL;
+    model->v_memory = NULL;
+
+    model->inputs = NULL;
+    model->targets = NULL;
+    model->inputs_test = NULL;
+    model->targets_test = NULL;
 }
