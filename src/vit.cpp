@@ -489,4 +489,6 @@ void ViT_init(ViTModel* model){
     model->targets = NULL;
     model->inputs_test = NULL;
     model->targets_test = NULL;
+
+    printf("ViT model initialized.\n");
 }
