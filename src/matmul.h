@@ -103,7 +103,7 @@ inline void slice_tensor_at_t(float* orig, float* extracted,
 inline void matmul_forward_with_slicing_at_t(float* x, float* y, float* weight, float* bias,
                                              int B, int T, int H, int NC, int t){
     // Allocate memory for the sliced tensor
-    float* extracted_x = (float*)malloc(B*H*sizeof(float));
+    float* extracted_x = (float*)calloc(B*H, sizeof(float));
     // Extract at index t
     slice_tensor_at_t(x, extracted_x, B, T, H, t);
 
@@ -132,8 +132,8 @@ inline void matmul_backward_with_slicing_at_t(float* x, float* weight, float* dx
                                               float* dy, int B, int T, int H, int NC, int t){
     
     // Allocate memory for the sliced tensor and its gradient
-    float* extracted_x = (float*)malloc(B*H*sizeof(float));
-    float* extracted_dx = (float*)malloc(B*H*sizeof(float));
+    float* extracted_x = (float*)calloc(B*H, sizeof(float));
+    float* extracted_dx = (float*)calloc(B*H, sizeof(float));
     // Extract at index t
     slice_tensor_at_t(x, extracted_x, B, T, H, t);
 
