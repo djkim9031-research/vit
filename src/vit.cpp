@@ -1,5 +1,7 @@
 #include "vit.h"
 
+#include <chrono>
+
 void ViT_forward(ViTModel* model, float* inputs, int* targets, int B){
     // Ensure the model was initialized 
     if(model->params_memory == NULL){
@@ -281,6 +283,7 @@ void ViT_update(ViTModel* model, float learning_rate, float beta1, float beta2, 
 void Dataloader(ViTModel* model, const char* data_dir){
 
     printf("------------------------------------------------------------------------\n");
+    printf("Loading the data...\n");
     const char* train_folder_name = "train/";
     const char* test_folder_name = "test/";
     const char* label_name = "labels.txt";
@@ -510,9 +513,38 @@ void ViT_trainer(const char* yaml_path, const char* data_dir){
     ViT_init(model);
 
     // Read in the data, and create the train/test dataset
-    //Dataloader(model, data_dir);
+    Dataloader(model, data_dir);
 
+    // Commonly referred parameters
+    int B = model->batch_size;
+    int im_C = model->config.channels;
+    int im_H = model->config.image_height;
+    int im_W = model->config.image_width;
+    float* batch_data = (float*)malloc(B*im_C*im_H*im_W*sizeof(float));
+    int* batch_labels = (int*)malloc(B*sizeof(int));
+    printf("------------------------------------------------------------------------\n");
+
+    // Training loop
+    printf("Starting the ViT model training...\n");
+    for(int step=0; step<40; ++step){
+
+        // Main training step
+        auto start = std::chrono::steady_clock::now();
+        //GetBatch(model, batch_data, batch_labels);
+        ViT_forward(model, batch_data, batch_labels, B);
+        ViT_zero_grad(model);
+        ViT_backward(model);
+        ViT_update(model, 1e-2f, 0.9f, 0.999f, 1e-8f, 1e-2f, step+1);
+        auto end = std::chrono::steady_clock::now();
+        double time_elapsed_s = std::chrono::duration_cast<std::chrono::duration<double>>(end - start).count();
+        printf("[step %d]: train loss %f, step duration %f (ms)\n", step, model->mean_loss, time_elapsed_s * 1000);
+    }
+
+    printf("Training completed.\n");
 
     // Deallocate the model
+    free(batch_data);
+    free(batch_labels);
+    ViT_free(model);
     free(model);
 }
