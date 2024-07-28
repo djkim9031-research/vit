@@ -260,3 +260,12 @@ void ViT_from_YAML(ViTModel* model, const char* yaml_path);
 // @param model                 Model config for the current ViT model. 
 //
 void ViT_init(ViTModel* model);
+
+// ViT model training function call.
+//
+// @param yaml_path             Path to the YAML file.
+// @param data_dir              Directory where train/test dataset and labels are stored.
+//                              .bmp images and label.txt files should exist under `data_dir/train`
+//                              and `data_dir/test` folders.
+//
+void ViT_trainer(const char* yaml_path, const char* data_dir);

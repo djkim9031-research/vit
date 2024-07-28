@@ -18,7 +18,7 @@ void ViT_forward(ViTModel* model, float* inputs, int* targets, int B){
     int P = model->config.patch_size;
 
     // Sanity check
-    assert(im_W%P==0 && im_H&P==0);
+    assert(im_W%P==0 && im_H%P==0);
 
     int NP = (im_W/P)*(im_H/P); // number of patches 
     int T = NP + 1; // sequence length (+1 corresponds to cls_token)
@@ -280,6 +280,7 @@ void ViT_update(ViTModel* model, float learning_rate, float beta1, float beta2, 
 
 void Dataloader(ViTModel* model, const char* data_dir){
 
+    printf("------------------------------------------------------------------------\n");
     const char* train_folder_name = "train/";
     const char* test_folder_name = "test/";
     const char* label_name = "labels.txt";
@@ -318,17 +319,17 @@ void Dataloader(ViTModel* model, const char* data_dir){
 
     // Reading the train data
     if(ReadAllBMPsInDirectory(train_path, &allPixels_train, model->nImages, width, height)==0){
-        printf("successfully read all the BMP files - train data.\n");
+        printf("Successfully read all the BMP files - train data.\n");
         if(LabelReader(train_label_path, model->nImages, &(model->labels_train))==0){
-            printf("successfully read all the labels - train data.\n");
+            printf("Successfully read all the labels - train data.\n");
         }
     }
 
     // Reading the test data
     if(ReadAllBMPsInDirectory(test_path, &allPixels_test, model->nImages_test, width, height)==0){
-        printf("successfully read all the BMP files - test data.\n");
+        printf("Successfully read all the BMP files - test data.\n");
         if(LabelReader(test_label_path, model->nImages_test, &(model->labels_test))==0){
-            printf("successfully read all the labels - test data.\n");
+            printf("Successfully read all the labels - test data.\n");
         }
     }
 
@@ -352,6 +353,8 @@ void Dataloader(ViTModel* model, const char* data_dir){
     free(test_path);
     free(train_label_path);
     free(test_label_path);
+
+    printf("Train/test dataset created.\n");
 }
 
 void GetBatch(ViTModel* model, float* batch_data, int* batch_labels){
@@ -440,7 +443,7 @@ void ViT_init(ViTModel* model){
     int P = model->config.patch_size;
 
     // Sanity check
-    assert(im_W%P==0 && im_H&P==0);
+    assert(im_W%P==0 && im_H%P==0);
 
     int NP = (im_W/P)*(im_H/P); // number of patches 
     int T = NP + 1; // sequence length (+1 corresponds to cls_token)
@@ -491,4 +494,25 @@ void ViT_init(ViTModel* model){
     model->targets_test = NULL;
 
     printf("ViT model initialized.\n");
+}
+
+void ViT_trainer(const char* yaml_path, const char* data_dir){
+
+    // Build the ViTModel
+    ViTModel* model = (ViTModel*)malloc(sizeof(ViTModel));
+    if (model == NULL) {
+        fprintf(stderr, "Failed to allocate memory for model.\n");
+        return;
+    }
+
+    // Read in config values from YAML file and initialize the model.
+    ViT_from_YAML(model, yaml_path);
+    ViT_init(model);
+
+    // Read in the data, and create the train/test dataset
+    //Dataloader(model, data_dir);
+
+
+    // Deallocate the model
+    free(model);
 }
