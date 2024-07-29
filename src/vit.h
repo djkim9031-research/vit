@@ -273,25 +273,29 @@ inline void param_initializer(ParameterTensors* parameters, size_t* param_sizes)
     float normal_std = 0.02f;
     float rand_seed = 42;
     
-    // Conv2d and matmul operation weight/bias are initialized from 
+    // Conv2d and matmul operation weights are initialized from 
     // normal distribution with 0 mean and 0.02 std.
     normal_init(parameters->patch_embd_kernal, param_sizes[0], normal_mean, normal_std, rand_seed);
-    normal_init(parameters->patch_embd_bias, param_sizes[1], normal_mean, normal_std, rand_seed);
     normal_init(parameters->qkvw, param_sizes[6], normal_mean, normal_std, rand_seed);
-    normal_init(parameters->qkvb, param_sizes[7], normal_mean, normal_std, rand_seed);
     normal_init(parameters->attn_projw, param_sizes[8], normal_mean, normal_std, rand_seed);
-    normal_init(parameters->attn_projb, param_sizes[9], normal_mean, normal_std, rand_seed);
     normal_init(parameters->mlpw, param_sizes[12], normal_mean, normal_std, rand_seed);
-    normal_init(parameters->mlpb, param_sizes[13], normal_mean, normal_std, rand_seed);
     normal_init(parameters->mlp_projw, param_sizes[14], normal_mean, normal_std, rand_seed);
-    normal_init(parameters->mlp_projb, param_sizes[15], normal_mean, normal_std, rand_seed);
     normal_init(parameters->clsw, param_sizes[16], normal_mean, normal_std, rand_seed);
-    normal_init(parameters->clsb, param_sizes[17], normal_mean, normal_std, rand_seed);
 
-    // Layernorm operation weight/bias are initialized to 0
-    zeros_init(parameters->ln1w, param_sizes[4]);
+    // Conv2d and matmul operation biases are initialized to 0
+    zeros_init(parameters->patch_embd_bias, param_sizes[1]); 
+    zeros_init(parameters->qkvb, param_sizes[7]); 
+    zeros_init(parameters->attn_projb, param_sizes[9]);
+    zeros_init(parameters->mlpb, param_sizes[13]); 
+    zeros_init(parameters->mlp_projb, param_sizes[15]); 
+    zeros_init(parameters->clsb, param_sizes[17]); 
+
+    // Layernorm operation weights are initialized to 1
+    ones_init(parameters->ln1w, param_sizes[4]);
+    ones_init(parameters->ln2w, param_sizes[10]);
+    
+    // Layernorm operation biases are initialized to 0
     zeros_init(parameters->ln1b, param_sizes[5]);
-    zeros_init(parameters->ln2w, param_sizes[10]);
     zeros_init(parameters->ln2b, param_sizes[11]);
 
     // Class token and position embedding weights are initialized from
