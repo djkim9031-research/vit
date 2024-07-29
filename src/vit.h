@@ -15,6 +15,7 @@
 #include "activations.h"
 #include "softmax.h"
 #include "dataprep.h"
+#include "init_weights.h"
 
 #define NUM_PARAMETER_TENSORS 18
 typedef struct{
@@ -260,6 +261,44 @@ void ViT_from_YAML(ViTModel* model, const char* yaml_path);
 // @param model                 Model config for the current ViT model. 
 //
 void ViT_init(ViTModel* model);
+
+// Initialize ViT model trainable parameters.
+// 
+// @param parameters            The trainable parameter set
+// @param param_sizes           Size_t array containing the size of each trainable parameter
+//
+inline void param_initializer(ParameterTensors* parameters, size_t* param_sizes){
+
+    float normal_mean = 0.f;
+    float normal_std = 0.02f;
+    float rand_seed = 42;
+    
+    // Conv2d and matmul operation weight/bias are initialized from 
+    // normal distribution with 0 mean and 0.02 std.
+    normal_init(parameters->patch_embd_kernal, param_sizes[0], normal_mean, normal_std, rand_seed);
+    normal_init(parameters->patch_embd_bias, param_sizes[1], normal_mean, normal_std, rand_seed);
+    normal_init(parameters->qkvw, param_sizes[6], normal_mean, normal_std, rand_seed);
+    normal_init(parameters->qkvb, param_sizes[7], normal_mean, normal_std, rand_seed);
+    normal_init(parameters->attn_projw, param_sizes[8], normal_mean, normal_std, rand_seed);
+    normal_init(parameters->attn_projb, param_sizes[9], normal_mean, normal_std, rand_seed);
+    normal_init(parameters->mlpw, param_sizes[12], normal_mean, normal_std, rand_seed);
+    normal_init(parameters->mlpb, param_sizes[13], normal_mean, normal_std, rand_seed);
+    normal_init(parameters->mlp_projw, param_sizes[14], normal_mean, normal_std, rand_seed);
+    normal_init(parameters->mlp_projb, param_sizes[15], normal_mean, normal_std, rand_seed);
+    normal_init(parameters->clsw, param_sizes[16], normal_mean, normal_std, rand_seed);
+    normal_init(parameters->clsb, param_sizes[17], normal_mean, normal_std, rand_seed);
+
+    // Layernorm operation weight/bias are initialized to 0
+    zeros_init(parameters->ln1w, param_sizes[4]);
+    zeros_init(parameters->ln1b, param_sizes[5]);
+    zeros_init(parameters->ln2w, param_sizes[10]);
+    zeros_init(parameters->ln2b, param_sizes[11]);
+
+    // Class token and position embedding weights are initialized from
+    // normal distribution with 0 mean and 0.02 std with [-2, 2] truncation
+    trunc_normal_init(parameters->cls_token, param_sizes[2], normal_mean, normal_std, -2.0f, 2.0f, rand_seed);
+    trunc_normal_init(parameters->pos_embd, param_sizes[3], normal_mean, normal_std, -2.0f, 2.0f, rand_seed);
+}
 
 // ViT model training function call.
 //

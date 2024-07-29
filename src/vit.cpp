@@ -483,6 +483,9 @@ void ViT_init(ViTModel* model){
     // Get the memory allocation and mapping
     model->params_memory = malloc_and_point_parameters(&model->params, model->param_sizes);
 
+    // Parameter value initialization
+    
+
     // Other inits
     model->acts_memory = NULL;
     model->params_grads_memory = NULL;
