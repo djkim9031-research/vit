@@ -20,3 +20,23 @@ inline int parse_int_value(const char* line){
     if (*line == ':') line++;
     return atoi(trim_whitespace((char*)line));
 }
+
+// Helper function to print the progress bar
+inline void print_progress(int step, int total_steps, float step_avg_loss){
+    int bar_width = 50; // Width of the progress bar
+    int pos = (step * bar_width)/total_steps;
+
+    printf("[");
+    for(int i=0; i<bar_width; ++i){
+        if(i<pos){
+            printf("=");
+        } else if(i==pos){
+            printf(">");
+        } else{
+            printf(" ");
+        }
+    }
+
+    printf("] %d%% | Step Average Loss: %.2f\r", (step * 100) / total_steps, step_avg_loss);
+    fflush(stdout);
+}
