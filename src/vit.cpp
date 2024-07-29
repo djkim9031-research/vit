@@ -484,7 +484,7 @@ void ViT_init(ViTModel* model){
     model->params_memory = malloc_and_point_parameters(&model->params, model->param_sizes);
 
     // Parameter value initialization
-    
+    param_initializer(&(model->params), model->param_sizes);
 
     // Other inits
     model->acts_memory = NULL;
@@ -544,7 +544,7 @@ void ViT_trainer(const char* yaml_path, const char* data_dir){
             ViT_forward(model, batch_data, batch_labels, B);
             ViT_zero_grad(model);
             ViT_backward(model);
-            ViT_update(model, 1e-2f, 0.9f, 0.999f, 1e-8f, 1e-2f, step);
+            ViT_update(model, 3e-4f, 0.9f, 0.999f, 1e-8f, 1e-2f, step);
 
             cum_sum += model->mean_loss;
             float step_avg_loss = cum_sum/((float)step);
