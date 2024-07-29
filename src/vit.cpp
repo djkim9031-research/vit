@@ -522,22 +522,36 @@ void ViT_trainer(const char* yaml_path, const char* data_dir){
     int im_W = model->config.image_width;
     float* batch_data = (float*)malloc(B*im_C*im_H*im_W*sizeof(float));
     int* batch_labels = (int*)malloc(B*sizeof(int));
+    int total_steps = (model->nImages)/(model->batch_size);
+    if((model->nImages)%(model->batch_size)!=0) {total_steps += 1;}
     printf("------------------------------------------------------------------------\n");
 
     // Training loop
     printf("Starting the ViT model training...\n");
-    for(int step=0; step<40; ++step){
+    for(int epoch=0; epoch<100; ++epoch){
 
         // Main training step
+        printf("Starting Epoch %d\n", epoch+1);
+        model->curr_batch_idx = 0;
+        float cum_sum = 0.f;
         auto start = std::chrono::steady_clock::now();
-        //GetBatch(model, batch_data, batch_labels);
-        ViT_forward(model, batch_data, batch_labels, B);
-        ViT_zero_grad(model);
-        ViT_backward(model);
-        ViT_update(model, 1e-2f, 0.9f, 0.999f, 1e-8f, 1e-2f, step+1);
+
+        for(int step=1; step<=total_steps; ++step){     
+            GetBatch(model, batch_data, batch_labels);
+            ViT_forward(model, batch_data, batch_labels, B);
+            ViT_zero_grad(model);
+            ViT_backward(model);
+            ViT_update(model, 1e-2f, 0.9f, 0.999f, 1e-8f, 1e-2f, step);
+
+            cum_sum += model->mean_loss;
+            float step_avg_loss = cum_sum/((float)step);
+            print_progress(step, total_steps, step_avg_loss);
+        }
         auto end = std::chrono::steady_clock::now();
         double time_elapsed_s = std::chrono::duration_cast<std::chrono::duration<double>>(end - start).count();
-        printf("[step %d]: train loss %f, step duration %f (ms)\n", step, model->mean_loss, time_elapsed_s * 1000);
+        printf("\n");
+        printf("[Epoch %d]: train loss %f, duration %f (s)\n", epoch+1, model->mean_loss, time_elapsed_s);
+
     }
 
     printf("Training completed.\n");
