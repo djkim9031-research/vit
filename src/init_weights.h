@@ -34,7 +34,7 @@ inline void ones_init(float* params, size_t size){
 //                              e.g., L1 x L2 x L3 tensor's size should be L1*L2*L3
 // @param mean                  The mean of the normal distribution.
 // @param std                   The standard deviation of the normal distribution.
-// @param seed                  Random seed for reproduciblity
+// @param seed                  Random seed for reproduciblity.
 //
 inline void normal_init(float* params, size_t size, float mean, float std, unsigned int seed){
     srand(seed);
@@ -43,5 +43,30 @@ inline void normal_init(float* params, size_t size, float mean, float std, unsig
         float v = ((float) rand()/RAND_MAX);
         float z = sqrt(-2.0*log(u)) * cos(2.0 * M_PI * v);
         params[i] = mean + std*z;
+    }
+}
+
+// This function initializes given trainable parameters to random values from normal distribution 
+// with [min, max] value truncation.
+//
+// @param params                Linearized trainable parameters.
+// @param size                  The entire size of the trainable parameter.
+//                              e.g., L1 x L2 x L3 tensor's size should be L1*L2*L3
+// @param mean                  The mean of the normal distribution.
+// @param std                   The standard deviation of the normal distribution.
+// @param min                   Minimum value for truncation.
+// @param max                   Maximum value for truncation.
+// @param seed                  Random seed for reproduciblity.
+//
+inline void trunc_normal_init(float* params, size_t size, float mean, float std, float min, float max, unsigned int seed){
+    srand(seed);
+    for(size_t i=0; i<size; ++i){
+        float value;
+        do{
+            float u = ((float) rand()/RAND_MAX);
+            float v = ((float) rand()/RAND_MAX);
+            float z = sqrt(-2.0*log(u)) * cos(2.0 * M_PI * v);
+        } while (value < min || value > max);
+        params[i] = value;
     }
 }
