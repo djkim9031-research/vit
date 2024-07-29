@@ -537,6 +537,7 @@ void ViT_trainer(const char* yaml_path, const char* data_dir){
         printf("Starting Epoch %d\n", epoch+1);
         model->curr_batch_idx = 0;
         float cum_sum = 0.f;
+        float step_avg_loss = 0.f;
         auto start = std::chrono::steady_clock::now();
 
         for(int step=1; step<=total_steps; ++step){     
@@ -547,13 +548,13 @@ void ViT_trainer(const char* yaml_path, const char* data_dir){
             ViT_update(model, 3e-4f, 0.9f, 0.999f, 1e-8f, 1e-2f, step);
 
             cum_sum += model->mean_loss;
-            float step_avg_loss = cum_sum/((float)step);
+            step_avg_loss = cum_sum/((float)step);
             print_progress(step, total_steps, step_avg_loss);
         }
         auto end = std::chrono::steady_clock::now();
         double time_elapsed_s = std::chrono::duration_cast<std::chrono::duration<double>>(end - start).count();
         printf("\n");
-        printf("[Epoch %d]: train loss %f, duration %f (s)\n", epoch+1, model->mean_loss, time_elapsed_s);
+        printf("[Epoch %d]: train loss %f, duration %f (s)\n", epoch+1, step_avg_loss, time_elapsed_s);
 
     }
 
