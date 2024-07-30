@@ -217,7 +217,7 @@ inline int ConvertTo1DFloatArray(BGR** allPixels, int nImages, int width, int he
                 int pxl_Idx = y*width + x;
 
                 // Indices for R, G, B pixels
-                // Each pixel is normalized to values [0, 1]
+                // Each pixel is scaled to values [0, 1]
                 int R_idx = b*channels*height*width + 0*height*width + pxl_Idx;
                 int G_idx = b*channels*height*width + 1*height*width + pxl_Idx;
                 int B_idx = b*channels*height*width + 2*height*width + pxl_Idx;
@@ -225,6 +225,11 @@ inline int ConvertTo1DFloatArray(BGR** allPixels, int nImages, int width, int he
                 (*data)[R_idx] = static_cast<float>(allPixels[b][pxl_Idx].red)/255.f;
                 (*data)[G_idx] = static_cast<float>(allPixels[b][pxl_Idx].green)/255.f;
                 (*data)[B_idx] = static_cast<float>(allPixels[b][pxl_Idx].blue)/255.f;
+
+                // Normalize each pixel to [-1, +1]
+                (*data)[R_idx] = ((*data)[R_idx] - 0.5)/0.5;
+                (*data)[G_idx] = ((*data)[G_idx] - 0.5)/0.5;
+                (*data)[B_idx] = ((*data)[B_idx] - 0.5)/0.5;
             }
         }
     }
