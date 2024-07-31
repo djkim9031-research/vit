@@ -7,7 +7,7 @@
 // Helper function to flatten and transpose the input tensor
 inline void flatten_and_transpose(float* x, float* x_mod, int B, int C, int H, int W){
     int HW = H*W;
-    #pragma omp parallel for collapse(2)
+    //#pragma omp parallel for collapse(2)
     for(int b=0; b<B; ++b){
         for(int c=0; c<C; ++c){
             for(int h=0; h<H; ++h){
@@ -24,7 +24,7 @@ inline void flatten_and_transpose(float* x, float* x_mod, int B, int C, int H, i
 // Helper function to reverse the flatten and transpose
 inline void reverse_flatten_and_transpose(float* x_mod, float* x, int B, int C, int H, int W){
     int HW = H*W;
-    #pragma omp parallel for collapse(2)
+    //#pragma omp parallel for collapse(2)
     for(int b=0; b<B; ++b){
         for(int c=0; c<C; ++c){
             for(int h=0; h<H; ++h){

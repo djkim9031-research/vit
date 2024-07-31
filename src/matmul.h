@@ -18,7 +18,7 @@
 //
 inline void matmul_forward(float* x, float* y, float* weight, float* bias,
                            int B, int in_r, int in_c, int ou_c){
-    #pragma omp parallel for collapse(3)
+    //#pragma omp parallel for collapse(3)
     for(int b=0; b<B; ++b){
         for(int r=0; r<in_r; ++r){
             for(int oc=0; oc<ou_c; ++oc){
@@ -47,13 +47,13 @@ inline void matmul_forward(float* x, float* y, float* weight, float* bias,
 inline void matmul_backward(float* x, float* weight, float* dx, float* dweight, float* dbias,
                             float* dy, int B, int in_r, int in_c, int ou_c){
     
-    #pragma omp parallel for collapse(3)
+    //#pragma omp parallel for collapse(3)
     for(int b=0; b<B; ++b){
         for(int r=0; r<in_r; ++r){
             for(int oc=0; oc<ou_c; ++oc){
                 float grad = dy[b*in_r*ou_c + r*ou_c + oc];
                 if(dbias!=NULL){
-                    #pragma omp atomic
+                    //#pragma omp atomic
                     dbias[oc] += grad;
                 }
                 for(int ic=0; ic<in_c; ++ic){
@@ -145,7 +145,7 @@ inline void matmul_backward_with_slicing_at_t(float* x, float* weight, float* dx
     // Accumulate the gradient in the original tensor x, dx
     for(int b=0; b<B; ++b){
         for(int h=0; h<H; ++h){
-            #pragma omp atomic
+            //#pragma omp atomic
             dx[b*T*H + t*H + h] += extracted_dx[b*H + h];
         }
     }

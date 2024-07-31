@@ -26,7 +26,7 @@ inline void conv2d_forward(float* x, float* kernel, float* bias, float* y,
     // output width
     int OW = (W - KW + 2*padding) / stride + 1;
 
-    #pragma omp parallel for collapse(4)
+    //#pragma omp parallel for collapse(4)
     for(int b=0; b<B; ++b){
         for(int oc=0; oc<OC; ++oc){
             for(int oh=0; oh<OH; ++oh){
@@ -80,7 +80,7 @@ inline void conv2d_backward(float* x, float* kernel,
     // output width
     int OW = (W - KW + 2*padding) / stride + 1;
 
-    #pragma omp parallel for collapse(4)
+    //#pragma omp parallel for collapse(4)
     for(int b=0; b<B; ++b){
         for(int oc=0; oc<OC; ++oc){
             for(int oh=0; oh<OH; ++oh){
@@ -88,7 +88,7 @@ inline void conv2d_backward(float* x, float* kernel,
                     // dL/db = dL/dy*dy/db = y'*1
                     float grad = dy[b*OC*OH*OW + oc*OH*OW + oh*OW + ow];
                     if(dbias!=NULL){
-                        #pragma omp atomic
+                        //#pragma omp atomic
                         dbias[oc] += grad;
                     }
                     for(int ic=0; ic<C; ++ic){
@@ -100,10 +100,10 @@ inline void conv2d_backward(float* x, float* kernel,
                                     float curr_x = x[b*C*H*W + ic*H*W + ih*W + iw];
                                     // (elementwise) dL/dx = dL/dy*dy/dx = y'*kernel
                                     // (elementwise) dL/dkernel = y'*x
-                                    #pragma omp atomic
+                                    //#pragma omp atomic
                                     dkernel[oc*C*KH*KW + ic*KH*KW + kh*KW + kw] += curr_x*grad;
                                     if(dx != NULL){
-                                        #pragma omp atomic
+                                        //#pragma omp atomic
                                         dx[b*H*W*C + ic*H*W + ih*W + iw] += kernel[oc*C*KH*KW + ic*KH*KW + kh*KW + kw]*grad;
                                     }
                                 }

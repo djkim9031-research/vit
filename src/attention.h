@@ -23,7 +23,7 @@ inline void attention_forward(float* x, float* preattn, float* attn, float* y,
 
     // Original qkv, each [B, T, H]
     // It is treated each as [B, T, NH * HS] to calculate an attention score for each head
-    #pragma omp parallel for collapse(3)
+    //#pragma omp parallel for collapse(3)
     for(int b=0; b<B; ++b){
         for(int t1=0; t1<T; ++t1){
             for(int nh=0; nh<NH; ++nh){
