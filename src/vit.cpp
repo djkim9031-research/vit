@@ -143,7 +143,12 @@ void ViT_forward(ViTModel* model, float* inputs, int* targets, int B){
         mean_loss += acts.losses[b];
     }
     mean_loss /= B;
-    model->mean_loss = mean_loss;
+
+    if(model->training_mode){
+        model->mean_loss = mean_loss;
+    } else{
+        model->mean_loss_test = mean_loss;
+    }
 }
 
 void ViT_backward(ViTModel* model){
@@ -356,13 +361,19 @@ void Dataloader(ViTModel* model, const char* data_dir){
     free(test_path);
     free(train_label_path);
     free(test_label_path);
-    
+
     printf("Train/test dataset created.\n");
 }
 
 void GetBatch(ViTModel* model, float* batch_data, int* batch_labels){
-    int start_b_idx = model->curr_batch_idx;
-    int end_b_idx = start_b_idx + model->batch_size > model->nImages ? model->nImages : start_b_idx + model->batch_size;
+    int start_b_idx, end_b_idx;
+    if(model->training_mode){
+        start_b_idx = model->curr_batch_idx;
+        end_b_idx = start_b_idx + model->batch_size > model->nImages ? model->nImages : start_b_idx + model->batch_size;
+    } else{
+        start_b_idx = model->curr_batch_idx_test;
+        end_b_idx = start_b_idx + model->batch_size_test > model->nImages_test ? model->nImages_test : start_b_idx + model->batch_size_test;
+    }
 
     int channels = model->config.channels;
     int height = model->config.image_height;
@@ -371,12 +382,24 @@ void GetBatch(ViTModel* model, float* batch_data, int* batch_labels){
     for(int b=start_b_idx; b<end_b_idx; ++b){
         int data_idx = b*channels*height*width;
         int batch_idx = (b-start_b_idx)*channels*height*width;
-        memcpy(&batch_data[batch_idx], &(model->data_train[data_idx]), channels * width * height * sizeof(float));
-        batch_labels[b-start_b_idx] = model->labels_train[b];
+
+        if(model->training_mode){
+            memcpy(&batch_data[batch_idx], &(model->data_train[data_idx]), channels * width * height * sizeof(float));
+            batch_labels[b-start_b_idx] = model->labels_train[b];
+        } else{
+            memcpy(&batch_data[batch_idx], &(model->data_test[data_idx]), channels * width * height * sizeof(float));
+            batch_labels[b-start_b_idx] = model->labels_test[b];
+        }
+        
     }
 
     // Update curr_batch_idx
-    model->curr_batch_idx = end_b_idx;
+    if(model->training_mode){
+        model->curr_batch_idx = end_b_idx;
+    }else{
+        model->curr_batch_idx_test = end_b_idx;
+    }
+    
 }
 
 void ViT_from_YAML(ViTModel* model, const char* yaml_path){
@@ -408,7 +431,9 @@ void ViT_from_YAML(ViTModel* model, const char* yaml_path){
             model->config.num_classes = parse_int_value(trimmed_line);
         } else if (strncmp(trimmed_line, "batch_size:", 11) == 0) {
             model->batch_size = parse_int_value(trimmed_line);
-        } 
+        } else if (strncmp(trimmed_line, "test_batch_size:", 16) == 0){
+            model->batch_size_test = parse_int_value(trimmed_line);
+        }
     }
 
     printf("------------------------------------------------------------------------\n");
@@ -422,6 +447,7 @@ void ViT_from_YAML(ViTModel* model, const char* yaml_path){
     printf("num_layers: %d\n", model->config.num_layers);
     printf("num_classes: %d\n", model->config.num_classes);
     printf("batch_size: %d\n", model->batch_size);
+    printf("test_batch_size: %d\n", model->batch_size_test);
 }
 
 void ViT_init(ViTModel* model){
@@ -431,6 +457,7 @@ void ViT_init(ViTModel* model){
 
     // Initialize the curr_batch_idx
     model->curr_batch_idx = 0;
+    model->curr_batch_idx_test = 0;
 
     // Initialize the loss params.
     model->mean_loss = 0.f;
@@ -531,6 +558,7 @@ void ViT_trainer(const char* yaml_path, const char* data_dir){
 
     // Training loop
     printf("Starting the ViT model training...\n");
+    model->training_mode = true;
     for(int epoch=0; epoch<100; ++epoch){
 
         // Main training step
@@ -555,7 +583,7 @@ void ViT_trainer(const char* yaml_path, const char* data_dir){
         double time_elapsed_s = std::chrono::duration_cast<std::chrono::duration<double>>(end - start).count();
         printf("\n");
         printf("[Epoch %d]: train loss %f, duration %f (s)\n", epoch+1, step_avg_loss, time_elapsed_s);
-
+        ViT_evaluate(model);
     }
 
     printf("Training completed.\n");
@@ -565,4 +593,37 @@ void ViT_trainer(const char* yaml_path, const char* data_dir){
     free(batch_labels);
     ViT_free(model);
     free(model);
+}
+
+void ViT_evaluate(ViTModel* model){
+
+    model->training_mode = false;
+    model->curr_batch_idx_test = 0;
+
+    int B = model->batch_size_test;
+    int im_C = model->config.channels;
+    int im_H = model->config.image_height;
+    int im_W = model->config.image_width;
+    float* batch_data = (float*)malloc(B*im_C*im_H*im_W*sizeof(float));
+    int* batch_labels = (int*)malloc(B*sizeof(int));
+    int total_steps = (model->nImages_test)/(model->batch_size_test);
+    if((model->nImages_test)%(model->batch_size_test)!=0) {total_steps += 1;}
+
+    float cum_sum = 0.f;
+    float step_avg_loss = 0.f;
+
+    for(int i=1; i<=total_steps; ++i){
+        GetBatch(model, batch_data, batch_labels);
+        ViT_forward(model, batch_data, batch_labels, B);
+
+        cum_sum += model->mean_loss_test;
+        
+    }
+    step_avg_loss = cum_sum/((float)total_steps);
+    
+    printf("[Evaluation]: evaluation loss %f\n", step_avg_loss);
+
+    free(batch_data);
+    free(batch_labels);
+    model->training_mode = true;
 }
