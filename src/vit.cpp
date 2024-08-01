@@ -356,7 +356,7 @@ void Dataloader(ViTModel* model, const char* data_dir){
     free(test_path);
     free(train_label_path);
     free(test_label_path);
-
+    
     printf("Train/test dataset created.\n");
 }
 
@@ -545,7 +545,7 @@ void ViT_trainer(const char* yaml_path, const char* data_dir){
             ViT_forward(model, batch_data, batch_labels, B);
             ViT_zero_grad(model);
             ViT_backward(model);
-            ViT_update(model, 3e-4f, 0.9f, 0.999f, 1e-8f, 1e-2f, step);
+            ViT_update(model, 5e-3f, 0.9f, 0.999f, 1e-8f, 1e-2f, epoch*total_steps + step);
 
             cum_sum += model->mean_loss;
             step_avg_loss = cum_sum/((float)step);
