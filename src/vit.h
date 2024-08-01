@@ -158,12 +158,15 @@ typedef struct{
     int* targets;
     float mean_loss;
     int nImages;
+    bool training_mode;
 
     // configurations (test data)
     float* inputs_test;
     int* targets_test;
     float mean_loss_test;
     int nImages_test;
+    int batch_size_test;
+    int curr_batch_idx_test;
 
     // Entirety of data
     float* data_train;
@@ -312,3 +315,8 @@ inline void param_initializer(ParameterTensors* parameters, size_t* param_sizes)
 //                              and `data_dir/test` folders.
 //
 void ViT_trainer(const char* yaml_path, const char* data_dir);
+
+// ViT model evaluation functon call.
+//
+// @param model                 Model config for the current ViT model. 
+void ViT_evaluate(ViTModel* model);
