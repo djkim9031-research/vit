@@ -252,8 +252,9 @@ void Dataloader(ViTModel* model, const char* data_dir, int nData_to_read_train, 
 // @param model                 Model config for the current ViT model. 
 // @param batch_data            Linearized batch pixel data input (batch_size, channel, height, width)
 // @param batch_labels          Linearized batch target (batch_size, cls_idx)
+// @param batch_size            number of data being handled in current batch.
 // 
-void GetBatch(ViTModel* model, float* batch_data, int* batch_labels);
+void GetBatch(ViTModel* model, float* batch_data, int* batch_labels, int& batch_size);
 
 // Build the ViT model from YAML file.
 //

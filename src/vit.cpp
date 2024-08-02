@@ -139,16 +139,15 @@ void ViT_forward(ViTModel* model, float* inputs, int* targets, int B){
     crossentropy_forward(acts.probs, targets, acts.losses, B, NC);
 
     // loss metric calculation for the model
-    float mean_loss = 0.f;
+    float loss_sum = 0.f;
     for(int b=0; b<B; ++b){
-        mean_loss += acts.losses[b];
+        loss_sum += acts.losses[b];
     }
-    mean_loss /= B;
 
     if(model->training_mode){
-        model->mean_loss = mean_loss;
+        model->mean_loss = loss_sum;
     } else{
-        model->mean_loss_test = mean_loss;
+        model->mean_loss_test = loss_sum;
     }
 }
 
@@ -367,7 +366,7 @@ void Dataloader(ViTModel* model, const char* data_dir, int nData_to_read_train, 
     printf("Train/test dataset created.\n");
 }
 
-void GetBatch(ViTModel* model, float* batch_data, int* batch_labels){
+void GetBatch(ViTModel* model, float* batch_data, int* batch_labels, int& batch_size){
     int start_b_idx, end_b_idx;
     if(model->training_mode){
         start_b_idx = model->curr_batch_idx;
@@ -380,6 +379,7 @@ void GetBatch(ViTModel* model, float* batch_data, int* batch_labels){
     int channels = model->config.channels;
     int height = model->config.image_height;
     int width = model->config.image_width;
+    batch_size = end_b_idx - start_b_idx;
 
     for(int b=start_b_idx; b<end_b_idx; ++b){
         int data_idx = b*channels*height*width;
@@ -571,20 +571,23 @@ void ViT_trainer(const char* yaml_path, const char* data_dir, int nData_to_read_
         auto start = std::chrono::steady_clock::now();
 
         for(int step=1; step<=total_steps; ++step){     
-            GetBatch(model, batch_data, batch_labels);
-            ViT_forward(model, batch_data, batch_labels, B);
+            int curr_batch_size;
+            int step_cum_sum = 0.f;
+            GetBatch(model, batch_data, batch_labels, curr_batch_size);
+            ViT_forward(model, batch_data, batch_labels, curr_batch_size);
             ViT_zero_grad(model);
             ViT_backward(model);
             ViT_update(model, 5e-3f, 0.9f, 0.999f, 1e-8f, 1e-2f, epoch*total_steps + step);
 
             cum_sum += model->mean_loss;
-            step_avg_loss = cum_sum/((float)step);
+            step_cum_sum += model->mean_loss;
+            step_avg_loss = step_cum_sum/(float)curr_batch_size;
             print_progress(step, total_steps, step_avg_loss);
         }
         auto end = std::chrono::steady_clock::now();
         double time_elapsed_s = std::chrono::duration_cast<std::chrono::duration<double>>(end - start).count();
         printf("\n");
-        printf("[Epoch %d]: train loss %f, duration %f (s)\n", epoch+1, step_avg_loss, time_elapsed_s);
+        printf("[Epoch %d]: train loss %f, duration %f (s)\n", epoch+1, cum_sum/(float)model->nImages, time_elapsed_s);
         ViT_evaluate(model);
     }
 
@@ -614,16 +617,16 @@ void ViT_evaluate(ViTModel* model){
     if((model->nImages_test)%(model->batch_size_test)!=0) {total_steps += 1;}
 
     float cum_sum = 0.f;
-    float step_avg_loss = 0.f;
+    float eval_loss = 0.f;
     int correct_classification = 0;
-    int num_instances = 0;
 
     for(int i=1; i<=total_steps; ++i){
-        GetBatch(model, batch_data, batch_labels);
-        ViT_forward(model, batch_data, batch_labels, B);
+        int curr_batch_size;
+        GetBatch(model, batch_data, batch_labels, curr_batch_size);
+        ViT_forward(model, batch_data, batch_labels, curr_batch_size);
 
         // Accuracy metric calculation
-        for(int b=0; b<B; ++b){
+        for(int b=0; b<curr_batch_size; ++b){
             int max_arg = -1;
             float max_val = FLT_MIN;
             for(int c=0; c<NC; ++c){
@@ -634,17 +637,16 @@ void ViT_evaluate(ViTModel* model){
             }
 
             bool correct_pred = max_arg == batch_labels[b] ? true : false;
-            num_instances++;
             if(correct_pred){
                 correct_classification += 1;
             }
         }
         cum_sum += model->mean_loss_test;
     }
-    step_avg_loss = cum_sum/((float)total_steps);
-    float accuracy = (float)correct_classification/(float)num_instances;
+    eval_loss = cum_sum/((float)model->nImages_test);
+    float accuracy = (float)correct_classification/((float)model->nImages_test);
     
-    printf("[Evaluation]: evaluation loss %f | accuracy %.2f(%%)\n", step_avg_loss, accuracy*100);
+    printf("[Evaluation]: evaluation loss %f | accuracy %.2f(%%)\n", eval_loss, accuracy*100);
 
     free(batch_data);
     free(batch_labels);
