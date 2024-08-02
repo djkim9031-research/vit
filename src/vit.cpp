@@ -1,6 +1,7 @@
 #include "vit.h"
 
 #include <chrono>
+#include <float.h>
 
 void ViT_forward(ViTModel* model, float* inputs, int* targets, int B){
     // Ensure the model was initialized 
@@ -606,22 +607,43 @@ void ViT_evaluate(ViTModel* model){
     int im_W = model->config.image_width;
     float* batch_data = (float*)malloc(B*im_C*im_H*im_W*sizeof(float));
     int* batch_labels = (int*)malloc(B*sizeof(int));
+    int NC = model->config.num_classes;
+
     int total_steps = (model->nImages_test)/(model->batch_size_test);
     if((model->nImages_test)%(model->batch_size_test)!=0) {total_steps += 1;}
 
     float cum_sum = 0.f;
     float step_avg_loss = 0.f;
+    int correct_classification = 0;
+    int num_instances = 0;
 
     for(int i=1; i<=total_steps; ++i){
         GetBatch(model, batch_data, batch_labels);
         ViT_forward(model, batch_data, batch_labels, B);
 
+        // Accuracy metric calculation
+        for(int b=0; b<B; ++b){
+            int max_arg = -1;
+            float max_val = FLT_MIN;
+            for(int c=0; c<NC; ++c){
+                if(model->acts.logits[b*NC + c] > max_val){
+                    max_val = model->acts.logits[b*NC + c];
+                    max_arg = c;
+                }
+            }
+
+            bool correct_pred = max_arg == batch_labels[b] ? true : false;
+            num_instances++;
+            if(correct_pred){
+                correct_classification += 1;
+            }
+        }
         cum_sum += model->mean_loss_test;
-        
     }
     step_avg_loss = cum_sum/((float)total_steps);
+    float accuracy = (float)correct_classification/(float)num_instances;
     
-    printf("[Evaluation]: evaluation loss %f\n", step_avg_loss);
+    printf("[Evaluation]: evaluation loss %f | accuracy %.2f(%%)\n", step_avg_loss, accuracy*100);
 
     free(batch_data);
     free(batch_labels);
