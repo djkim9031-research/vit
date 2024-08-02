@@ -64,10 +64,11 @@ inline int BMPReader(const char* filename, const int width, const int height, BG
 // @param nImages       number of bmp images inside the folder.
 // @param width         width of the bmp image.
 // @param height        height of the bmp image.
+// @param nImgToRead    number of bmp images to read.
 //
 // @return              error code (i.e., -1 if error, 0 if successful)
 //
-inline int ReadAllBMPsInDirectory(const char* dirPath, BGR*** allPixels, int& nImages, const int width, const int height){
+inline int ReadAllBMPsInDirectory(const char* dirPath, BGR*** allPixels, int& nImages, const int width, const int height, int nImgToRead){
     DIR* dir = opendir(dirPath);
     if(!dir){
         perror("Unable to open the given directory.");
@@ -83,6 +84,11 @@ inline int ReadAllBMPsInDirectory(const char* dirPath, BGR*** allPixels, int& nI
     }
     rewinddir(dir); // Rewind the directory pointer to read all bmp images.
 
+    // Adjust nImgToRead -> this is sub-optimal at the moment. Should be updated.
+    if(nImages != nImgToRead) {
+        nImages = nImgToRead;
+    }
+
     *allPixels = (BGR**)malloc(nImages*sizeof(BGR*));
     if(*allPixels == NULL){
         perror("Unable to allocate memory");
@@ -91,7 +97,7 @@ inline int ReadAllBMPsInDirectory(const char* dirPath, BGR*** allPixels, int& nI
     }
 
     int idx = 0;
-    while((entry = readdir(dir)) != NULL){
+    while((entry = readdir(dir)) != NULL && idx < nImgToRead){
         if (entry->d_type == DT_REG && strstr(entry->d_name, ".bmp")){
             char filePath[1024];
             snprintf(filePath, sizeof(filePath), "%s/%s", dirPath, entry->d_name);
@@ -117,17 +123,18 @@ inline int ReadAllBMPsInDirectory(const char* dirPath, BGR*** allPixels, int& nI
 // @param filename      path to the .txt lbael file.
 // @param nImages       number of bmp images inside the folder.
 // @param labels        labels extracted from the txt file.
+// @param nLabToRead    number of labels to read.
 //
 // @return              error code (i.e., -1 if error, 0 if successful)
 //
-inline int LabelReader(const char* filename, const int nImages, int** labels){
+inline int LabelReader(const char* filename, const int nImages, int** labels, int nLabToRead){
     FILE* file = fopen(filename, "r");
     if(!file){
         perror("Unable to open the label text file.");
         return -1;
     }
 
-    *labels = (int*)malloc(nImages*sizeof(int));
+    *labels = (int*)malloc(nLabToRead*sizeof(int));
     if(*labels == NULL){
         perror("Unable to allocate memory");
         fclose(file);
@@ -137,7 +144,7 @@ inline int LabelReader(const char* filename, const int nImages, int** labels){
     int idx = 0;
     char line[256];
     while(fgets(line, sizeof(line), file)){
-        if(idx >= nImages){
+        if(idx >= nLabToRead){
             break;
         }
 

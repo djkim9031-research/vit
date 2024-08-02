@@ -286,7 +286,7 @@ void ViT_update(ViTModel* model, float learning_rate, float beta1, float beta2, 
 }
 
 
-void Dataloader(ViTModel* model, const char* data_dir){
+void Dataloader(ViTModel* model, const char* data_dir, int nData_to_read_train, int nData_to_read_test){
 
     printf("------------------------------------------------------------------------\n");
     printf("Loading the data...\n");
@@ -327,17 +327,17 @@ void Dataloader(ViTModel* model, const char* data_dir){
     BGR** allPixels_test = NULL;
 
     // Reading the train data
-    if(ReadAllBMPsInDirectory(train_path, &allPixels_train, model->nImages, width, height)==0){
+    if(ReadAllBMPsInDirectory(train_path, &allPixels_train, model->nImages, width, height, nData_to_read_train)==0){
         printf("Successfully read all the BMP files - train data.\n");
-        if(LabelReader(train_label_path, model->nImages, &(model->labels_train))==0){
+        if(LabelReader(train_label_path, model->nImages, &(model->labels_train), nData_to_read_train)==0){
             printf("Successfully read all the labels - train data.\n");
         }
     }
 
     // Reading the test data
-    if(ReadAllBMPsInDirectory(test_path, &allPixels_test, model->nImages_test, width, height)==0){
+    if(ReadAllBMPsInDirectory(test_path, &allPixels_test, model->nImages_test, width, height, nData_to_read_test)==0){
         printf("Successfully read all the BMP files - test data.\n");
-        if(LabelReader(test_label_path, model->nImages_test, &(model->labels_test))==0){
+        if(LabelReader(test_label_path, model->nImages_test, &(model->labels_test), nData_to_read_test)==0){
             printf("Successfully read all the labels - test data.\n");
         }
     }
@@ -362,7 +362,8 @@ void Dataloader(ViTModel* model, const char* data_dir){
     free(test_path);
     free(train_label_path);
     free(test_label_path);
-
+    
+    printf("Num trainset: %d, Num testset: %d\n", model->nImages, model->nImages_test);
     printf("Train/test dataset created.\n");
 }
 
@@ -530,7 +531,7 @@ void ViT_init(ViTModel* model){
     printf("ViT model initialized.\n");
 }
 
-void ViT_trainer(const char* yaml_path, const char* data_dir){
+void ViT_trainer(const char* yaml_path, const char* data_dir, int nData_to_read_train, int nData_to_read_test){
 
     // Build the ViTModel
     ViTModel* model = (ViTModel*)malloc(sizeof(ViTModel));
@@ -544,7 +545,7 @@ void ViT_trainer(const char* yaml_path, const char* data_dir){
     ViT_init(model);
 
     // Read in the data, and create the train/test dataset
-    Dataloader(model, data_dir);
+    Dataloader(model, data_dir, nData_to_read_train, nData_to_read_test);
 
     // Commonly referred parameters
     int B = model->batch_size;

@@ -239,8 +239,10 @@ inline void ViT_free(ViTModel* model){
 // @param data_dir              Directory where train/test dataset and labels are stored.
 //                              .bmp images and label.txt files should exist under `data_dir/train`
 //                              and `data_dir/test` folders.
+// @param nData_to_read_train   number of train dataset to read.
+// @param nData_to_read_test    number of test dataset to read.
 //
-void Dataloader(ViTModel* model, const char* data_dir);
+void Dataloader(ViTModel* model, const char* data_dir, int nData_to_read_train, int nData_to_read_test);
 
 // Function to get the batch of data in sequential order.
 // In the `dataloader`, all the pixel data and labels are extracted and shuffled.
@@ -313,8 +315,10 @@ inline void param_initializer(ParameterTensors* parameters, size_t* param_sizes)
 // @param data_dir              Directory where train/test dataset and labels are stored.
 //                              .bmp images and label.txt files should exist under `data_dir/train`
 //                              and `data_dir/test` folders.
+// @param nData_to_read_train   number of train dataset to read.
+// @param nData_to_read_test    number of test dataset to read.
 //
-void ViT_trainer(const char* yaml_path, const char* data_dir);
+void ViT_trainer(const char* yaml_path, const char* data_dir, int nData_to_read_train, int nData_to_read_test);
 
 // ViT model evaluation functon call.
 //
