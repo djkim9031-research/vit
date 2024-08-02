@@ -573,7 +573,6 @@ void ViT_trainer(const char* yaml_path, const char* data_dir, int nData_to_read_
 
         for(int step=1; step<=total_steps; ++step){     
             int curr_batch_size;
-            int step_cum_sum = 0.f;
             GetBatch(model, batch_data, batch_labels, curr_batch_size);
             ViT_forward(model, batch_data, batch_labels, curr_batch_size);
             ViT_zero_grad(model);
@@ -581,9 +580,8 @@ void ViT_trainer(const char* yaml_path, const char* data_dir, int nData_to_read_
             ViT_update(model, 5e-3f, 0.9f, 0.999f, 1e-8f, 1e-2f, epoch*total_steps + step);
 
             cum_sum += model->mean_loss;
-            step_cum_sum += model->mean_loss;
             num_processed += curr_batch_size;
-            step_avg_loss = step_cum_sum/(float)num_processed;
+            step_avg_loss = cum_sum/(float)num_processed;
             print_progress(step, total_steps, step_avg_loss);
         }
         auto end = std::chrono::steady_clock::now();
