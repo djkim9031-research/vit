@@ -158,7 +158,7 @@ inline int LabelReader(const char* filename, const int nImages, int** labels, in
     return 0;
 }
 
-// Function to shuffle the images and labels
+// Function to shuffle the BGR image data and labels
 //
 // @param allPixels     pixels extracted from all the bmp image.
 // @param labels        labels extracted from the txt file.
@@ -197,6 +197,50 @@ inline void ShuffleData(BGR** allPixels, int* labels, int nImages, unsigned int 
     }
 
     free(swapped);
+}
+
+// Function to shuffle the linearized image data and labels
+// Shuffling using Fisher-Yates algorithm
+// https://en.wikipedia.org/wiki/Fisher%E2%80%93Yates_shuffle
+//
+// @param data          all pixels linearized to 1D float points.
+// @param labels        labels extracted from the txt file.
+// @param width         width of the bmp image.
+// @param height        height of the bmp image.
+// @param channels      number of channels.
+// @param nImages       number of data
+// @param seed          random seed for reproduciblity
+//
+inline void Shuffle1DBatch(float* data, int* labels, int width, int height, int channels, int nImages, int seed){
+    // Check if data and labels are valid
+    if(data==NULL || labels == NULL){
+        return;
+    }
+
+    srand(seed);
+
+    // Calculate the block size
+    int blockSize = channels * height * width;
+
+    // Shuffle using Fisher-Yates algorithm
+    for(int i=nImages-1; i>0; --i){
+        // Generate a random index j (0 <= j <= i)
+        int j = rand() % (i+1);
+
+        // Swap the i-th and j-th blocks in the image data
+        for(int b=0; b<blockSize; ++b){
+            float temp = data[i*blockSize + b];
+            data[i*blockSize + b] = data[j*blockSize + b];
+            data[j*blockSize + b] = temp;
+        }
+
+        // Swap the corresponding labels
+        int tempLabel = labels[i];
+        labels[i] = labels[j];
+        labels[j] = tempLabel;
+    }
+
+    return;
 }
 
 // Convert BGR double pointer to a single float pointer.
