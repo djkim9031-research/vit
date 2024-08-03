@@ -209,15 +209,14 @@ inline void ShuffleData(BGR** allPixels, int* labels, int nImages, unsigned int 
 // @param height        height of the bmp image.
 // @param channels      number of channels.
 // @param nImages       number of data
-// @param seed          random seed for reproduciblity
 //
-inline void Shuffle1DBatch(float* data, int* labels, int width, int height, int channels, int nImages, int seed){
+inline void Shuffle1DBatch(float* data, int* labels, int width, int height, int channels, int nImages){
     // Check if data and labels are valid
     if(data==NULL || labels == NULL){
         return;
     }
 
-    srand(seed);
+    srand((unsigned int)time(NULL));
 
     // Calculate the block size
     int blockSize = channels * height * width;
