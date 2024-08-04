@@ -531,7 +531,7 @@ void ViT_init(ViTModel* model){
     printf("ViT model initialized.\n");
 }
 
-void ViT_trainer(const char* yaml_path, const char* data_dir, int nData_to_read_train, int nData_to_read_test){
+void ViT_trainer(const char* yaml_path, const char* data_dir, const char* param_file_dir, const char* filename, int nData_to_read_train, int nData_to_read_test){
 
     // Build the ViTModel
     ViTModel* model = (ViTModel*)malloc(sizeof(ViTModel));
@@ -546,6 +546,14 @@ void ViT_trainer(const char* yaml_path, const char* data_dir, int nData_to_read_
 
     // Read in the data, and create the train/test dataset
     Dataloader(model, data_dir, nData_to_read_train, nData_to_read_test);
+
+    // Load the saved parameters if available.
+    char load_path[256];
+    strcpy(load_path, param_file_dir);
+    strcat(load_path, filename);
+    if(file_exists(load_path)){
+        load_parameters(&(model->params), load_path, model->param_sizes);
+    }
 
     // Commonly referred parameters
     int B = model->batch_size;
@@ -592,6 +600,16 @@ void ViT_trainer(const char* yaml_path, const char* data_dir, int nData_to_read_
         printf("\n");
         printf("[Epoch %d]: train loss %f, duration %f (s)\n", epoch+1, cum_sum/(float)model->nImages, time_elapsed_s);
         ViT_evaluate(model);
+
+        // Save parameter tensors every 5 epochs.
+        if((epoch+1)%5 == 0){
+            char save_file_path[256];
+            concatenate_file_path(param_file_dir, (epoch+1), save_file_path);
+            save_parameters(&(model->params), save_file_path, model->param_sizes);
+            printf("Saved the learnable parameter tensors to: %s\n", save_file_path);
+        }
+
+        printf("------------------------------------------------------------------------\n");
     }
 
     printf("Training completed.\n");

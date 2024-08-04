@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <assert.h>
 #include <string.h>
+#include <sys/stat.h>
 
 #include "utils.h"
 #include "conv2d.h"
@@ -316,12 +317,100 @@ inline void param_initializer(ParameterTensors* parameters, size_t* param_sizes)
 // @param data_dir              Directory where train/test dataset and labels are stored.
 //                              .bmp images and label.txt files should exist under `data_dir/train`
 //                              and `data_dir/test` folders.
+// @param param_file_dir        Path to the directory where binary file exists or should be saved under (if not existing yet).
+// @param filename              Binary file name.
 // @param nData_to_read_train   number of train dataset to read.
 // @param nData_to_read_test    number of test dataset to read.
 //
-void ViT_trainer(const char* yaml_path, const char* data_dir, int nData_to_read_train, int nData_to_read_test);
+void ViT_trainer(const char* yaml_path, const char* data_dir, const char* param_file_dir, const char* filename, int nData_to_read_train, int nData_to_read_test);
 
 // ViT model evaluation functon call.
 //
 // @param model                 Model config for the current ViT model. 
 void ViT_evaluate(ViTModel* model);
+
+// Function to save weight/bias tensors to a binary file.
+//
+// @param params                Parameter tensors to save.
+// @param file_path             Path to the output binary file.
+// @param param_size            Array of sizes of each parameter tensor.
+//
+inline void save_parameters(const ParameterTensors* params, const char* file_path, size_t* param_sizes){
+    
+    FILE* file = fopen(file_path, "wb");
+    if(!file){
+        fprintf(stderr, "Failed to open file for saving parameter tensors.\n");
+        return;
+    }
+
+    float* ptrs[] = {
+        params->patch_embd_kernal, params->patch_embd_bias, params->cls_token, params->pos_embd,
+        params->ln1w, params->ln1b, params->qkvw, params->qkvb, params->attn_projw, params->attn_projb,
+        params->ln2w, params->ln2b, params->mlpw, params->mlpb, params->mlp_projw, params->mlp_projb,
+        params->clsw, params->clsb
+    };
+
+    for(size_t i=0; i<NUM_PARAMETER_TENSORS; ++i){
+        fwrite(ptrs[i], sizeof(float), param_sizes[i], file);
+    }
+
+    fclose(file);
+}
+
+// Function to load weight/bias tensors from a binary file.
+//
+// @param params                Parameter tensors to load.
+// @param file_path             Path to the input binary file.
+// @param param_size            Array of sizes of each parameter tensor.
+//
+inline void load_parameters(ParameterTensors* params, const char* file_path, size_t* param_sizes){
+
+    FILE* file = fopen(file_path, "rb");
+    if(!file){
+        fprintf(stderr, "No saved parameters found.\n");
+        return;
+    }
+
+    float* ptrs[] = {
+        params->patch_embd_kernal, params->patch_embd_bias, params->cls_token, params->pos_embd,
+        params->ln1w, params->ln1b, params->qkvw, params->qkvb, params->attn_projw, params->attn_projb,
+        params->ln2w, params->ln2b, params->mlpw, params->mlpb, params->mlp_projw, params->mlp_projb,
+        params->clsw, params->clsb
+    };
+
+    for(size_t i=0; i<NUM_PARAMETER_TENSORS; ++i){
+        fread(ptrs[i], sizeof(float), param_sizes[i], file);
+    }
+
+    fclose(file);
+}
+
+// Helper function to check if the file exists.
+//
+// @param file_path             Path to the input binary file.
+//
+inline int file_exists(const char* file_path){
+    struct stat buffer;
+    return (stat(file_path, &buffer) == 0);
+}
+
+// Helper function to concatenate two strings, where one of which should first be converted from int to string.
+//
+// @param file_path_base        (const char*) file path base.
+// @param epoch                 (int) current epoch.
+// @param result_path           Concatenated file path.
+//
+inline void concatenate_file_path(const char* file_path_base, int epoch, char* result_path){
+
+    // Convert the integer to a string.
+    char i[20];
+    snprintf(i, sizeof(i), "%d", epoch);
+
+    // Concate the strings.
+    strcpy(result_path, file_path_base);
+    strcat(result_path, i);
+
+    return;
+}
+
+
