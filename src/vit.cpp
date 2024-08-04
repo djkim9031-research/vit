@@ -342,7 +342,7 @@ void Dataloader(ViTModel* model, const char* data_dir, int nData_to_read_train, 
     }
 
     // Shuffle train (image/label) pairs
-    ShuffleData(allPixels_train, model->labels_train, model->nImages, 42);
+    // ShuffleData(allPixels_train, model->labels_train, model->nImages, 42);
 
     // Linearize train and test dataset
     ConvertTo1DFloatArray(allPixels_train, model->nImages, width, height, channels, &(model->data_train));
@@ -569,6 +569,9 @@ void ViT_trainer(const char* yaml_path, const char* data_dir, int nData_to_read_
         float cum_sum = 0.f;
         int num_processed = 0;
         float step_avg_loss = 0.f;
+        
+        // Shuffling the dataset
+        Shuffle1DBatch(model->data_train, model->labels_train, im_W, im_H, im_C, model->nImages);
         auto start = std::chrono::steady_clock::now();
 
         for(int step=1; step<=total_steps; ++step){     
@@ -577,7 +580,7 @@ void ViT_trainer(const char* yaml_path, const char* data_dir, int nData_to_read_
             ViT_forward(model, batch_data, batch_labels, curr_batch_size);
             ViT_zero_grad(model);
             ViT_backward(model);
-            ViT_update(model, 5e-3f, 0.9f, 0.999f, 1e-8f, 1e-2f, epoch*total_steps + step);
+            ViT_update(model, 1e-2f, 0.9f, 0.999f, 1e-8f, 1e-2f, epoch*total_steps + step);
 
             cum_sum += model->mean_loss;
             num_processed += curr_batch_size;
