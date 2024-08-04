@@ -383,6 +383,9 @@ inline void load_parameters(ParameterTensors* params, const char* file_path, siz
     }
 
     fclose(file);
+
+    printf("------------------------------------------------------------------------\n");
+    printf("Loaded the learnable parameter tensors from: %s\n", file_path);
 }
 
 // Helper function to check if the file exists.
