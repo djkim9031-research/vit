@@ -49,7 +49,7 @@ inline void gelu_backward(float* x, float* dx, float* dy, int N){
 // -----------------------------------------------------------------------------------------
 // GPU kernels
 
-// Gelu kernal function 1
+// Gelu forward kernal function 1
 //
 // @param x             linearized input tensors
 // @param y             linearized output tensors
@@ -57,11 +57,19 @@ inline void gelu_backward(float* x, float* dx, float* dy, int N){
 //
 __global__ void gelu_forward_kernal1(float* x, float* y, int N);
 
+// Gelu backward kernal function 1
+//
+// @param x             linearized input tensors
+// @param dx            linearized input derivatives
+// @param dy            linearized output derivatives
+// @param N             number of elements
+//
+__global__ void gelu_backward_kernal1(float* x, float* dx, float* dy, int N);
 
 // -----------------------------------------------------------------------------------------
 // kernel launcher
 
-// Gelu kernal launcher 1
+// Gelu forward kernal launcher 1
 //
 // @param x             linearized input tensors
 // @param y             linearized output tensors
@@ -69,3 +77,13 @@ __global__ void gelu_forward_kernal1(float* x, float* y, int N);
 // @param block_size    CUDA block size
 //
 void gelu_forward1(float* x, float* y, int N, const int block_size);
+
+// Gelu backward kernal launcher 1
+//
+// @param x             linearized input tensors
+// @param dx            linearized input derivatives
+// @param dy            linearized output derivatives
+// @param N             number of elements
+// @param block_size    CUDA block size
+//
+void gelu_backward1(float* x, float* dx, float* dy, int N, const int block_size);
