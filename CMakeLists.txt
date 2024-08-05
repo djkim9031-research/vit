@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.25.0)
-project(vit LANGUAGES C CXX)
+project(vit LANGUAGES C CXX CUDA)
 
 set(CMAKE_CXX_STANDARD 20)
 
@@ -34,3 +34,10 @@ add_gtest_executable(matmul)
 add_gtest_executable(embeddings)
 add_gtest_executable(attention)
 add_gtest_executable(layernorm)
+
+# CUDA project setup
+file(GLOB_RECURSE CUDA_SOURCES "cuda/*cuh" "cuda/*.cu")
+add_executable(vit_cuda ${CUDA_SOURCES})
+set_target_properties(vit_cuda PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/cuda LINKER_LANGUAGE CUDA)
+target_include_directories(vit_cuda PRIVATE ${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES})
+
