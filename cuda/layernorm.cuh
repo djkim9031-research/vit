@@ -42,7 +42,7 @@ __global__ void layernorm_backward_kernal1(float* x, float* mean, float* rstd, f
 // -----------------------------------------------------------------------------------------
 // kernel launcher
 
-// Layernorm forward kernal launcher 1
+// Layernorm forward kernel launcher 1
 //
 // @param x             linearized input tensors (batch_size B, sequence length T, hidden_size = H)
 // @param mean          linearized mean tensors over the last dimension (hidden size dim) [B, T]
@@ -59,7 +59,7 @@ void layernorm_forward1(float* x, float* mean, float* rstd,
                         float* weight, float* bias, float* y,
                         int B, int T, int H, const int block_size);
 
-// Layernorm backward kernal launcher 1
+// Layernorm backward kernel launcher 1
 //
 // @param x             linearized input tensors (batch_size B, sequence length T, hidden_size = H)
 // @param mean          linearized mean tensors over the last dimension (hidden size dim) [B, T]
