@@ -52,12 +52,43 @@ __global__ void matmul_backward_kernel1(float* x, float* weight, float* dx, floa
 //
 __global__ void slice_tensor_at_t_kernel(float* orig, float* extracted,
                                          int B, int T, int H, int t){
+    
     int b_dim = blockIdx.x * blockDim.x + threadIdx.x;
     int h_dim = blockIdx.y * blockDim.y + threadIdx.y;
     if(b_dim < B && h_dim < H){
         extracted[b_dim*H + h_dim] = orig[b_dim*T*H + t*H + h_dim];
     }
     __syncthreads();
+}
+
+// Matmul forward function with slicing at t.
+//
+// (B, T, H) => slice at index t => (B, 1, H) * weight(H, NC) + bias(NC) => (B, 1, NC)
+//
+// @param x             linearized input tensors
+// @param y             linearized output tensors
+// @param weight        linearized weight tensors
+// @param bias          linearized bias tensors
+// @param B             number of batches
+// @param T             sequence length (patch length + 1)
+// @param H             hidden dimension size
+// @param NC            number of classes
+// @param t             index t in the sequence T to be sliced 
+//
+__global__ void matmul_forward_with_slicing_at_t_kernel(float* x, float* y, float* weight, float* bias,
+                                                        int B, int T, int H, int NC, int t){
+    
+    int b_dim = blockIdx.x * blockDim.x + threadIdx.x;
+    int nc_dim = blockIdx.y * blockDim.y + threadIdx.y;
+    if(b_dim < B && nc_dim < NC){
+        float val = (bias != NULL) ? bias[nc_dim] : 0.f;
+        for(int h=0; h<H; ++h){
+            float extracted_x = x[b_dim*T*H + t*H + h];
+            val += extracted_x * weight[h*NC + nc_dim];
+        }
+
+        y[b_dim*NC + nc_dim] = val;
+    }
 }
 
 // -----------------------------------------------------------------------------------------
@@ -79,8 +110,8 @@ void matmul_backward1(float* x, float* weight, float* dx, float* dweight, float*
     matmul_backward_kernel<<<gridDim, blockDim>>>(x, weight, dx, dweight, dbias, dy, B*in_r, in_c, ou_c);
 }
 
-void matmul_forward_with_slicing_at_t(float* x, float* y, float* weight, float* bias,
-                                      int B, int T, int H, int NC, int t, const int sqrt_block_size){
+void matmul_forward_with_slicing_at_t1(float* x, float* y, float* weight, float* bias,
+                                       int B, int T, int H, int NC, int t, const int sqrt_block_size){
     
     float* extracted_x;
     cudaMalloc(&extracted_x, B*H*sizeof(float));
@@ -90,8 +121,18 @@ void matmul_forward_with_slicing_at_t(float* x, float* y, float* weight, float* 
     dim3 blockDim(sqrt_block_size, sqrt_block_size);
 
     slice_tensor_at_t_kernel<<<slice_gridDim, blockDim>>>(x, extracted_x, B, T, H, t);
-    matmul_forward_kernel1<<<matmul_gridDim, matmul_gridDim>>>(extracted_x, y, weight, bias, B, H, NC);
+    matmul_forward_kernel1<<<matmul_gridDim, blockDim>>>(extracted_x, y, weight, bias, B, H, NC);
 
     cudaDeviceSynchronoize();
     cudaFree(extracted_x);
+}
+
+void matmul_forward_with_slicing_at_t2(float* x, float* y, float* weight, float* bias,
+                                       int B, int T, int H, int NC, int t, const int sqrt_block_size){
+    
+    dim3 gridDim(ceil_div(B, sqrt_block_size), ceil_div(NC, sqrt_block_size));
+    dim3 blockDim(sqrt_block_size, sqrt_block_size);
+
+    matmul_forward_with_slicing_at_t_kernel<<<gridDim, blockDim>>>(x, y, weight, bias, B, T, H, NC, t);
+
 }

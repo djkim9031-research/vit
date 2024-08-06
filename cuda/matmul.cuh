@@ -71,7 +71,7 @@ void matmul_forward1(float* x, float* y, float* weight, float* bias,
 void matmul_backward1(float* x, float* weight, float* dx, float* dweight, float* dbias,
                       float* dy, int B, int in_r, int in_c, int ou_c, const int sqrt_block_size);
 
-// Modified matmul forward kernal launcher
+// Modified matmul forward kernel launcher 1
 // Modified matmul forward function, to be used prior to the classification stage of ViT.
 // This is due to the fact that the attention block output should be sliced at first index
 // of the sequence T, corresponding to the cls_token, which is responsible for classification.
@@ -86,5 +86,26 @@ void matmul_backward1(float* x, float* weight, float* dx, float* dweight, float*
 // @param NC            number of classes
 // @param t             index t in the sequence T to be sliced 
 // @param sqrt_block_size  sqrt of CUDA block size
-void matmul_forward_with_slicing_at_t(float* x, float* y, float* weight, float* bias,
-                                      int B, int T, int H, int NC, int t, const int sqrt_block_size);
+//
+void matmul_forward_with_slicing_at_t1(float* x, float* y, float* weight, float* bias,
+                                       int B, int T, int H, int NC, int t, const int sqrt_block_size);
+
+// Modified matmul forward kernel launcher 2
+// Optimized one function call from the kernel
+// Modified matmul forward function, to be used prior to the classification stage of ViT.
+// This is due to the fact that the attention block output should be sliced at first index
+// of the sequence T, corresponding to the cls_token, which is responsible for classification.
+//
+// @param x             linearized input tensors
+// @param y             linearized output tensors
+// @param weight        linearized weight tensors
+// @param bias          linearized bias tensors
+// @param B             number of batches
+// @param T             sequence length (patch length + 1)
+// @param H             hidden dimension size
+// @param NC            number of classes
+// @param t             index t in the sequence T to be sliced 
+// @param sqrt_block_size  sqrt of CUDA block size
+//
+void matmul_forward_with_slicing_at_t2(float* x, float* y, float* weight, float* bias,
+                                       int B, int T, int H, int NC, int t, const int sqrt_block_size);
