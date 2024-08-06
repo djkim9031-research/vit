@@ -69,7 +69,7 @@ void matmul_forward1(float* x, float* y, float* weight, float* bias,
 // @param sqrt_block_size  sqrt of CUDA block size
 //
 void matmul_backward1(float* x, float* weight, float* dx, float* dweight, float* dbias,
-                      float* dy, int B, int in_r, int in_c, int ou_c, const int sqrt_block_size)
+                      float* dy, int B, int in_r, int in_c, int ou_c, const int sqrt_block_size);
 
 // Modified matmul forward kernal launcher
 // Modified matmul forward function, to be used prior to the classification stage of ViT.
