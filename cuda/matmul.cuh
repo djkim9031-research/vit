@@ -109,3 +109,23 @@ void matmul_forward_with_slicing_at_t1(float* x, float* y, float* weight, float*
 //
 void matmul_forward_with_slicing_at_t2(float* x, float* y, float* weight, float* bias,
                                        int B, int T, int H, int NC, int t, const int sqrt_block_size);
+
+
+// Modified matmul backward kernel launcher
+// Modified matmul backward function, to be used after the backward call of crossentropy_softmax_backward.
+//
+// @param x             linearized input tensors [B, T, H]
+// @param weight        linearized weight tensors [H, NC]
+// @param dx            linearized input tensor derivatives [B, T, H]
+// @param dweight       linearized weight tensor derivatives [H, NC]
+// @param dbias         linearized bias tensor derivatives [NC]
+// @param dy            linearized output tensor derivatives [B, 1, NC]
+// @param B             number of batches
+// @param T             sequence length (patch length + 1)
+// @param H             hidden dimension size
+// @param NC            number of classes
+// @param t             index t in the sequence T to be sliced 
+// @param sqrt_block_size  sqrt of CUDA block size
+// 
+void matmul_backward_with_slicing_at_t(float* x, float* weight, float* dx, float* dweight, float* dbias,
+                                       float* dy, int B, int T, int H, int NC, int t, const int sqrt_block_size);

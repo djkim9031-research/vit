@@ -91,6 +91,40 @@ __global__ void matmul_forward_with_slicing_at_t_kernel(float* x, float* y, floa
     }
 }
 
+// Matmul backward function with slicing at t.
+//
+// @param x             linearized input tensors [B, T, H]
+// @param weight        linearized weight tensors [H, NC]
+// @param dx            linearized input tensor derivatives [B, T, H]
+// @param dweight       linearized weight tensor derivatives [H, NC]
+// @param dbias         linearized bias tensor derivatives [NC]
+// @param dy            linearized output tensor derivatives [B, 1, NC]
+// @param B             number of batches
+// @param T             sequence length (patch length + 1)
+// @param H             hidden dimension size
+// @param NC            number of classes
+// @param t             index t in the sequence T to be sliced 
+//
+__global__ void matmul_backward_with_slicing_at_t_kernel(float* x, float* weight, float* dx, float* dweight, float* dbias,
+                                                         float* dy, int B, int T, int H, int NC, int t){
+    
+    int b_dim = blockIdx.x * blockDim.x + threadIdx.x;
+    int nc_dim = blockIdx.y * blockDim.y + threadIdx.y;
+    if(b_dim < B && nc_dim < NC){
+        float grad = dy[b_dim*NC + nc_dim];
+
+        if(dbias!=NULL){
+            atomicAdd(&dbias[nc_dim], grad);
+        }
+        for(int h=0; h<H; ++h){
+            float extracted_x = x[b_dim*T*H + t*H + h];
+
+            atomicAdd(&dweight[h*NC + nc_dim], grad*extracted_x);
+            atomicAdd(&dx[b_dim*T*H + t*H + h], grad*weight[h*NC + nc_dim]);
+        }
+    }
+}
+
 // -----------------------------------------------------------------------------------------
 // kernel launcher
 
@@ -134,5 +168,15 @@ void matmul_forward_with_slicing_at_t2(float* x, float* y, float* weight, float*
     dim3 blockDim(sqrt_block_size, sqrt_block_size);
 
     matmul_forward_with_slicing_at_t_kernel<<<gridDim, blockDim>>>(x, y, weight, bias, B, T, H, NC, t);
+
+}
+
+void matmul_backward_with_slicing_at_t(float* x, float* weight, float* dx, float* dweight, float* dbias,
+                                       float* dy, int B, int T, int H, int NC, int t, const int sqrt_block_size){
+    
+    dim3 gridDim(ceil_div(B, sqrt_block_size), ceil_div(NC, sqrt_block_size));
+    dim3 blockDim(sqrt_block_size, sqrt_block_size);
+
+    matmul_backward_with_slicing_at_t_kernel<<<gridDim, blockDim>>>(x, weight, dx, dweight, dbias, dy, B, T, H, NC, t);
 
 }
