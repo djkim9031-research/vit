@@ -34,6 +34,7 @@ add_gtest_executable(matmul)
 add_gtest_executable(embeddings)
 add_gtest_executable(attention)
 add_gtest_executable(layernorm)
+add_gtest_executable(softmax)
 
 # CUDA project setup
 file(GLOB_RECURSE CUDA_SOURCES "cuda/*cuh" "cuda/*.cu")
