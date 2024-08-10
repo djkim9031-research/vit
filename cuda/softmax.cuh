@@ -15,7 +15,16 @@
 __global__ void softmax_forward_kernel1(float* logits, float* probs,
                                         int B, int NC);
 
-
+// crossentropy, forward kernel function 1
+//
+// @param probs         linearized input probability tensors (B, 1, NC)
+// @param targets       linearized ground truth label tensors (B, 1, 1)
+// @param losses        linearized output losses tensors (B, 1, 1)
+// @param B             number of batches
+// @param NC            number of classes
+//
+__global__ void crossentropy_forward_kernel1(const float* probs, const int* targets, float* losses,
+                                             int B, int NC);
 
 // -----------------------------------------------------------------------------------------
 // kernel launcher
@@ -30,3 +39,15 @@ __global__ void softmax_forward_kernel1(float* logits, float* probs,
 //
 void softmax_forward1(float* logits, float* probs,
                       int B, int NC, const int block_size);
+
+// crossentropy forward kernel launcher 1
+//
+// @param probs         linearized input probability tensors (B, 1, NC)
+// @param targets       linearized ground truth label tensors (B, 1, 1)
+// @param losses        linearized output losses tensors (B, 1, 1)
+// @param B             number of batches
+// @param NC            number of classes
+// @param block_size    CUDA block size
+//
+void crossentropy_forward1(const float* probs, const int* targets, float* losses,
+                           int B, int NC, const int block_size);
