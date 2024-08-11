@@ -35,26 +35,29 @@ typedef struct{
     int num_classes; // 10, CIFAR10 dataset
 } ViTConfig;
 
+// ----------------------------------------------------------------------------
+// ViT model parameter tensors
+
 constexpr const int NUM_PARAMETER_TENSORS=18;
 typedef struct{
-    float* patch_embd_kernel; // (hidden_size (H), num_channel(C), patch_height (PH), patch_width (PW))
-    float* patch_embd_bias; // (H)
-    float* cls_token; // (1, 1, H)
-    float* pos_embd; // (1, 1 + num_patches (1+NP), H)
-    float* ln1w; // (num_layers (L), H)
-    float* ln1b; // (L, H)
-    float* qkvw; // qkv projection matmul weight, (L, H, 3*H = 3*head_size*num_heads)
-    float* qkvb; // (L, 3*H)
-    float* attn_projw; // post attn matmul weight, (L, H, H)
-    float* attn_projb; // (L, H)
-    float* ln2w; // (L, H)
-    float* ln2b; // (L, H)
-    float* mlpw; // (L, H, 4*H)
-    float* mlpb; // (L, 4*H)
-    float* mlp_projw; // (L, 4*H, H)
-    float* mlp_projb; // (L, H)
-    float* clsw; // classifier matmul (H, num_classes (NC) )
-    float* clsb; // (NC)
+    floatX* patch_embd_kernel; // (hidden_size (H), num_channel(C), patch_height (PH), patch_width (PW))
+    floatX* patch_embd_bias; // (H)
+    floatX* cls_token; // (1, 1, H)
+    floatX* pos_embd; // (1, 1 + num_patches (1+NP), H)
+    floatX* ln1w; // (num_layers (L), H)
+    floatX* ln1b; // (L, H)
+    floatX* qkvw; // qkv projection matmul weight, (L, H, 3*H = 3*head_size*num_heads)
+    floatX* qkvb; // (L, 3*H)
+    floatX* attn_projw; // post attn matmul weight, (L, H, H)
+    floatX* attn_projb; // (L, H)
+    floatX* ln2w; // (L, H)
+    floatX* ln2b; // (L, H)
+    floatX* mlpw; // (L, H, 4*H)
+    floatX* mlpb; // (L, 4*H)
+    floatX* mlp_projw; // (L, 4*H, H)
+    floatX* mlp_projb; // (L, H)
+    floatX* clsw; // classifier matmul (H, num_classes (NC) )
+    floatX* clsb; // (NC)
 } ParameterTensors;
 static_assert(sizeof(ParameterTensors) == NUM_PARAMETER_TENSORS*sizeof(void*), "Inconsistent parameter tensor size.");
 
