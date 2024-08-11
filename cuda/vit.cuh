@@ -153,3 +153,11 @@ typedef struct{
     float* losses; // loss metric for optimization (B, 1, 1);
 } ActivationTensors;
 
+struct TensorSpec {
+    void** ptr;
+    size_t size;
+    DType type;
+};
+
+#define TENSOR_SPEC(pointer, size) TensorSpec{(void**)(&pointer), (size), dtype_of(pointer)};
+
