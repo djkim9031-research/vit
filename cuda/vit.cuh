@@ -35,7 +35,7 @@ typedef struct{
     int num_classes; // 10, CIFAR10 dataset
 } ViTConfig;
 
-#define NUM_PARAMETER_TENSORS 18
+constexpr const int NUM_PARAMETER_TENSORS=18;
 typedef struct{
     float* patch_embd_kernel; // (hidden_size (H), num_channel(C), patch_height (PH), patch_width (PW))
     float* patch_embd_bias; // (H)
