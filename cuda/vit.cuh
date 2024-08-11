@@ -97,3 +97,28 @@ inline void fill_in_parameter_sizes(size_t* param_sizes, size_t* param_sizeof, V
     }
 }
 
+// Allocate memory for the parameters and point the individual tensors to the right places.
+inline void* malloc_and_point_parameters(ParameterTensors* params, size_t* param_sizes, size_t* param_sizeof){
+    
+    size_t num_parameters_bytes = 0;
+    for(int i=0; i<NUM_PARAMETER_TENSORS; ++i){
+        num_parameters_bytes += param_sizes[i] * param_sizeof[i];
+    }
+
+    // malloc all parameters at once on the device
+    void* params_memory;
+    cudaCheck(cudaMalloc((void**)&params_memory, num_parameters_bytes));
+    floatX** ptrs[] = {
+        &params->patch_embd_kernel, &params->patch_embd_bias, &params->cls_token, &params->pos_embd,
+        &params->ln1w, &params->ln1b, &params->qkvw, &params->qkvb, &params->attn_projw, &params->attn_projb,
+        &params->ln2w, &params->ln2b, &params->mlpw, &params->mlpb, &params->mlp_projw, &params->mlp_projb,
+        &params->clsw, &params->clsb
+    };
+    char* params_memory_iterator = (char*)params_memory;
+    for(int i=0; i<NUM_PARAMETER_TENSORS; ++i){
+        *(ptrs[i]) = (floatX*)params_memory_iterator;
+        params_memory_iterator += param_sizes[i] * param_sizeof[i];
+    }
+    return params_memory;
+}
+
