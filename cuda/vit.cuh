@@ -125,3 +125,31 @@ inline void* malloc_and_point_parameters(ParameterTensors* params, size_t* param
     return params_memory;
 }
 
+// ----------------------------------------------------------------------------
+// ViT model activation tensors
+
+constexpr const int NUM_ACTIVATION_TENSORS=21;
+typedef struct{
+    floatX* patch_embd; // (B, H, img_height/patch_size, img_width/path_size)
+    floatX* encoded; // (batch_size (B), num_patches + 1 (T), hidden_size (H))
+    float* ln1_mean; // (L, B, T)
+    float* ln1_rstd; // (L, B, T)
+    floatX* ln1; // layernorm1 output (num_layers (L), B, T, H)
+    floatX* qkv; // matmul projection output (L, B, T, 3*H)
+    floatX* preattn; // (L, B, num_heads (NH), T, T)
+    floatX* attn; // (L, B, NH, T, T)
+    floatX* attn_y; // attention output (L, B, T, H)
+    floatX* attn_proj; // post attention projection output (L, B, T, H)
+    floatX* resi_attn; // post attention residual output (L, B, T, H)
+    float* ln2_mean; // (L, B, T)
+    float* ln2_rstd; // (L, B, T)
+    floatX* ln2; // layernorm2 output (L, B, T, H)
+    floatX* mlph; // MLP hidden layer output (L, B, T, 4*H)
+    floatX* mlph_gelu; // gelu output (L, B, T, 4*H)
+    floatX* mlp_proj; // MLP projection output (L, B, T, H)
+    floatX* resi_mlp; // post mlp residual output (L, B, T, H)
+    floatX* logits; // matmul output projection H to num_classes (B, 1, NC)
+    floatX* probs; // softmax output (B, 1, NC);
+    float* losses; // loss metric for optimization (B, 1, 1);
+} ActivationTensors;
+
