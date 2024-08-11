@@ -14,3 +14,18 @@ template<class T>
 __host__ __device__ T ceil_div(T dividend, T divisor){
     return (dividend + divisor - 1)/divisor;
 }
+
+// Reduced/Mixed precision utilities
+#if defined(ENABLE_BF16)
+typedef __nv_bfloat16 floatX;
+typedef __nv_bfloat16 floatN;
+
+#elif defined(ENABLE_FP16)
+typedef half floatX;
+typedef half floatN;
+
+#else
+typedef float floatX;
+typedef float floatN;
+
+#endif
