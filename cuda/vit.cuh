@@ -162,7 +162,7 @@ struct TensorSpec {
 #define TENSOR_SPEC(pointer, size) TensorSpec{(void**)(&pointer), (size), dtype_of(pointer)};
 
 inline void fill_in_activation_sizes(const ActivationTensors* data, TensorSpec (&tensors)[NUM_ACTIVATION_TENSORS], size_t B, ViTConfig* config){
-    size_t nC = config->channels;
+
     size_t nL = config->num_layers;
     size_t nH = config->num_attention_heads;
     size_t H = config->hidden_size;
@@ -198,3 +198,29 @@ inline void fill_in_activation_sizes(const ActivationTensors* data, TensorSpec (
     tensors[20] = TENSOR_SPEC(data->losses, B);
 }
 
+inline void* malloc_and_point_activations(TensorSpec (&tensors)[NUM_ACTIVATION_TENSORS]){
+
+    size_t num_bytes = 0;
+    for(int i=0; i<NUM_ACTIVATION_TENSORS; ++i){
+        num_bytes += tensors[i].size * sizeof_dtype(tensors[i].type);
+    }
+
+    printf("[INFO] Allocating %d MiB for activations.\n", (int)round(num_bytes/(1024*1024)));
+
+    void* acts_memory;
+    cudaCheck(cudaMalloc((void**)&acts_memory, num_bytes));
+    cudaCheck(cudaMemset(acts_memory, 0, num_bytes));
+
+    char* acts_memory_iterator = (char*)acts_memory;
+    for(size_t i=0; i<NUM_ACTIVATION_TENSORS; ++i){
+        // extra protection so we don't accidentally use an empty buffer.
+        if(tensors[i].size==0){
+            *(tensors[i].ptr) = NULL;
+        } else {
+            *(tensors[i].ptr) = acts_memory_iterator;
+            acts_memory_iterator += tensors[i].size * sizeof_dtype(tensors[i].type);
+        }
+    }
+
+    return acts_memory;
+}
