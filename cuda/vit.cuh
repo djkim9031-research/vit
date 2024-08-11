@@ -161,3 +161,40 @@ struct TensorSpec {
 
 #define TENSOR_SPEC(pointer, size) TensorSpec{(void**)(&pointer), (size), dtype_of(pointer)};
 
+inline void fill_in_activation_sizes(const ActivationTensors* data, TensorSpec (&tensors)[NUM_ACTIVATION_TENSORS], size_t B, ViTConfig* config){
+    size_t nC = config->channels;
+    size_t nL = config->num_layers;
+    size_t nH = config->num_attention_heads;
+    size_t H = config->hidden_size;
+    size_t iW = config->image_width;
+    size_t iH = config->image_height;
+    size_t ps = config->patch_size;
+    size_t nCls = config->num_classes;
+
+    assert(iW%ps==0 && iH%ps==0); // Sanity check.
+    size_t nP = (iW/ps)*(iH/ps); // number of patches.
+    size_t T = nP + 1; // sequence length (+1 correspond to cls_token)
+
+    tensors[0] = TENSOR_SPEC(data->patch_embd, B*H*nP);
+    tensors[1] = TENSOR_SPEC(data->encoded, B*T*H);
+    tensors[2] = TENSOR_SPEC(data->ln1_mean, nL*B*T);
+    tensors[3] = TENSOR_SPEC(data->ln1_rstd, nL*B*T);
+    tensors[4] = TENSOR_SPEC(data->ln1, nL*B*T*H);
+    tensors[5] = TENSOR_SPEC(data->qkv, nL*B*T*3*H);
+    tensors[6] = TENSOR_SPEC(data->preattn, nL*B*nH*T*T);
+    tensors[7] = TENSOR_SPEC(data->attn, nL*B*nH*T*T);
+    tensors[8] = TENSOR_SPEC(data->attn_y, nL*B*T*H);
+    tensors[9] = TENSOR_SPEC(data->attn_proj, nL*B*T*H);
+    tensors[10] = TENSOR_SPEC(data->resi_attn, nL*B*T*H);
+    tensors[11] = TENSOR_SPEC(data->ln2_mean, nL*B*T);
+    tensors[12] = TENSOR_SPEC(data->ln2_rstd, nL*B*T);
+    tensors[13] = TENSOR_SPEC(data->ln2, nL*B*T*H);
+    tensors[14] = TENSOR_SPEC(data->mlph, nL*B*T*4*H);
+    tensors[15] = TENSOR_SPEC(data->mlph_gelu, nL*B*T*4*H);
+    tensors[16] = TENSOR_SPEC(data->mlp_proj, nL*B*T*H);
+    tensors[17] = TENSOR_SPEC(data->resi_mlp, nL*B*T*H);
+    tensors[18] = TENSOR_SPEC(data->logits, B*nCls);
+    tensors[19] = TENSOR_SPEC(data->probs, B*nCls);
+    tensors[20] = TENSOR_SPEC(data->losses, B);
+}
+
