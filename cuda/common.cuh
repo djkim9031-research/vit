@@ -45,7 +45,7 @@ enum class DType : uint8_t {
 
 // Given a datatype enum, returns the underlying number of bytes
 // for a scalar of that type
-size_t sizeof_dtype(DType type) {
+inline size_t sizeof_dtype(DType type) {
     switch (type) {
         case DType::FP32:
             return sizeof(float);
@@ -59,9 +59,9 @@ size_t sizeof_dtype(DType type) {
     }
 }
 
-DType dtype_of(float* f) { return DType::FP32; }
-DType dtype_of(half * f) { return DType::FP16; }
-DType dtype_of(nv_bfloat16 * f) { return DType::BF16; }
+inline DType dtype_of(float* f) { return DType::FP32; }
+inline DType dtype_of(half * f) { return DType::FP16; }
+inline DType dtype_of(nv_bfloat16 * f) { return DType::BF16; }
 
 
 // ----------------------------------------------------------------------------
