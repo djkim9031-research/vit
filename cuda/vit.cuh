@@ -252,6 +252,7 @@ typedef struct{
 
     // Gradients ofthe activations.
     ActivationTensors acts_grads;
+    TensorSpec acts_grads_specs[NUM_ACTIVATION_TENSORS];
     void* acts_grads_memory;
 
     // Other run state configurations (training data)
@@ -260,6 +261,8 @@ typedef struct{
     float* inputs;
     int* targets;
     float mean_loss;
+    float* accumulated_mean_loss; // GPU buffer used to accumulate loss.
+    float* cpu_loss; // CPU buffer to copy the losses to, allocated with cudaMallocHost.
     int nImages;
     bool training_mode;
 
