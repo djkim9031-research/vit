@@ -131,7 +131,7 @@ void ViT_forward(ViTModel* model, const float* inputs, const int* targets, size_
 
     // Copy inputs, targets to the model.
     cudaCheck(cudaMemcpy(model->inputs, inputs, B*im_C*im_H*im_W*sizeof(float)));
-    cudaCheck(cudaMemcpy(model->targets, targets, B*sizeof(float)));
+    cudaCheck(cudaMemcpy(model->targets, targets, B*sizeof(int)));
 
     // Forward pass
     ParameterTensors params = model->params;
