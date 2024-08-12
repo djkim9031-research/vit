@@ -230,6 +230,11 @@ typedef struct{
     int deviceId;
     cudaDeviceProp deviceProp;
 
+    // CUDA thread/block number helper
+    int max_num_threads;
+    int sqrt_max_num_threads;
+    int cubert_max_num_threads;
+
     // The weights (params of the model), and their sizes.
     ParameterTensors params;
     size_t param_sizes[NUM_PARAMETER_TENSORS];

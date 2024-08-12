@@ -32,6 +32,14 @@ void ViT_init_common(ViTModel* model){
     // Get the device properties
     cudaGetDeviceProperties(&model->deviceProp, model->deviceId);
 
+    // CUDA block size.
+    model->max_num_threads = model->deviceProp.maxThreadsPerBlock;
+    model->sqrt_max_num_threads = static_cast<int>(std::sqrt(model->max_num_threads));
+    model->cubert_max_num_threads = static_cast<int>(std::cbrt(model->max_num_threads));
+
+    printf("[INFO] Current CUDA deivce: %s, max threads/block = %d, sqrt max = %d, cubert max = %d\n", 
+            model->deviceProp.name, model->max_num_threads, model->sqrt_max_num_threads, model->cubert_max_num_threads);
+
 }
 
 void ViT_allocate_weights(ViTModel* model){
@@ -51,7 +59,7 @@ void ViT_allocate_weights(ViTModel* model){
 }
 
 void ViT_allocate_states(ViTModel* model, int B){
-    printf("Allocating %d MiB for parameter gradients.\n", (int)round(model->num_parameters * sizeof(floatX)/(1024*1024)));
+    printf("[INFO] Allocating %d MiB for parameter gradients.\n", (int)round(model->num_parameters * sizeof(floatX)/(1024*1024)));
     assert(model->params_grads_memory == nullptr);
     model->params_grads_memory = malloc_and_point_parameters(&(model->params_grads), model->param_sizes, model->param_sizeof);
 
@@ -70,7 +78,7 @@ void ViT_allocate_states(ViTModel* model, int B){
         num_act_bytes += model->acts_specs[i].size * sizeof_dtype(model->acts_specs[i].type);
     }
     num_act_bytes *= 2;
-    printf("Allocating %zd MiB for activation/gradients tensors.\n", num_act_bytes/(1024*1024));
+    printf("[INFO] Allocating %zd MiB for activation/gradients tensors.\n", num_act_bytes/(1024*1024));
 
     // Create memory for cahcing inputs and targets
     cudaCheck(cudaMalloc((void**)&model->inputs, B*im_C*im_H*im_W*sizeof(float)));
@@ -79,8 +87,8 @@ void ViT_allocate_states(ViTModel* model, int B){
     cudaCheck(cudaMallocHost((void**)&model->cpu_loss, sizeof(float)));
 
     // AdamW optimizer parameters.
-    printf("Allocating %zu MiB for AdamW optimizer state m.\n", sizeof(float)>>20);
-    printf("Allocating %zu MiB for AdamW optimizer state v.\n", sizeof(float)>>20);
+    printf("[INFO] Allocating %zu MiB for AdamW optimizer state m.\n", sizeof(float)>>20);
+    printf("[INFO] Allocating %zu MiB for AdamW optimizer state v.\n", sizeof(float)>>20);
     assert(model->m_memory == nullptr);
     assert(model->v_memory == nullptr);
     cudaCheck(cudaMalloc((void**)&model->m_memory, sizeof(float)));
@@ -89,5 +97,43 @@ void ViT_allocate_states(ViTModel* model, int B){
     // Memory usage info
     size_t free, total;
     cudaCheck(cudaMemGetInfo(&free, &total));
-    printf("[INFO] device memory usage %zd MiB / %zd MiB.\n", (total-free)/(1024*1024), total/(1024*1024));
+    printf("[INFO] Device memory usage %zd MiB / %zd MiB.\n", (total-free)/(1024*1024), total/(1024*1024));
+}
+
+void ViT_forward(ViTModel* model, const float* inputs, size_t B){
+    if(model->params_memory == NULL){
+        printf("[ERROR] model was not initialized properly.\n");
+        exit(EXIT_FAILURE);
+    }
+
+    // Number parameters
+    int NC = model->config.num_classes;
+    int NL = model->config.num_layers;
+    int NH = model->config.num_attention_heads;
+    int im_C = model->config.channels;
+    int im_H = model->config.image_height;
+    int im_W = model->config.image_width;
+    int H = model->config.hidden_size;
+    int P = model->config.patch_size;
+
+    // Sanity check
+    assert(im_W%P==0 && im_H%P==0);
+
+    int NP = (im_W/P)*(im_H/P); // number of patches 
+    int T = NP + 1; // sequence length (+1 corresponds to cls_token)
+
+    // Validate B is not larger than the values used at initialization.
+    // Smaller B is okay for inference only.
+    if(B > model->batch_size){
+        printf("[ERROR] Model got B=%d, Desired: (max) B=%d.\n", (int)B, model->batch_size);
+        exit(EXIT_FAILURE);
+    }
+
+    // Copy inputs to the model.
+    cudaCheck(cudaMemcpy(model->inputs, inputs, B*im_C*im_H*im_W*sizeof(float)));
+
+    // Forward pass
+    ParameterTensors params = model->params;
+    ActivationTensors acts = model->acts;
+
 }
