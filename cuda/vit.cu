@@ -136,4 +136,12 @@ void ViT_forward(ViTModel* model, const float* inputs, size_t B){
     ParameterTensors params = model->params;
     ActivationTensors acts = model->acts;
 
+    // Patch embedding
+    conv2d_forward1(model->inputs, params.patch_embd_kernel, params.patch_embd_bias, acts.patch_embd,
+                    B, im_C, im_H, im_W, H, P, P, P, 0, model->cubert_max_num_threads);
+    
+    // Embedding = pos_embedding + cat(cls_token, patch_embedding)
+    embeddings_forward1(acts.patch_embd, params.cls_token, params.pos_embd, acts.encoded,
+                        B, NP, H, im_H/P, im_W/P, model->cubert_max_num_threads);
+
 }
