@@ -100,7 +100,7 @@ void ViT_allocate_states(ViTModel* model, int B){
     printf("[INFO] Device memory usage %zd MiB / %zd MiB.\n", (total-free)/(1024*1024), total/(1024*1024));
 }
 
-void ViT_forward(ViTModel* model, const float* inputs, size_t B){
+void ViT_forward(ViTModel* model, const float* inputs, const int* targets, size_t B){
     if(model->params_memory == NULL){
         printf("[ERROR] model was not initialized properly.\n");
         exit(EXIT_FAILURE);
@@ -129,8 +129,9 @@ void ViT_forward(ViTModel* model, const float* inputs, size_t B){
         exit(EXIT_FAILURE);
     }
 
-    // Copy inputs to the model.
+    // Copy inputs, targets to the model.
     cudaCheck(cudaMemcpy(model->inputs, inputs, B*im_C*im_H*im_W*sizeof(float)));
+    cudaCheck(cudaMemcpy(model->targets, targets, B*sizeof(float)));
 
     // Forward pass
     ParameterTensors params = model->params;
@@ -143,5 +144,67 @@ void ViT_forward(ViTModel* model, const float* inputs, size_t B){
     // Embedding = pos_embedding + cat(cls_token, patch_embedding)
     embeddings_forward1(acts.patch_embd, params.cls_token, params.pos_embd, acts.encoded,
                         B, NP, H, im_H/P, im_W/P, model->cubert_max_num_threads);
+    
+    // Attention block layers
+    floatX* residual;
+    for(int l=0; l<NL; ++l){
+        residual = l == 0 ? acts.encoded : acts.resi_mlp + (l-1)*B*T*H;
+
+        // get the pointers of the weights for the current layer
+        floatX* l_ln1w = params.ln1w + l*H;
+        floatX* l_ln1b = params.ln1b + l*H;
+        floatX* l_qkvw = params.qkvw + l*H*3*H; 
+        floatX* l_qkvb = params.qkvb + l*3*H;
+        floatX* l_attn_projw = params.attn_projw + l*H*H;
+        floatX* l_attn_projb = params.attn_projb + l*H; 
+        floatX* l_ln2w = params.ln2w + l*H; 
+        floatX* l_ln2b = params.ln2b + l*H;
+        floatX* l_mlpw = params.mlpw + l*H*4*H; 
+        floatX* l_mlpb = params.mlpb + l*4*H; 
+        floatX* l_mlp_projw = params.mlp_projw + l*4*H*H; 
+        floatX* l_mlp_projb = params.mlp_projb + l*H;
+
+        // get the pointers of the activations for the current layer
+        float* l_ln1_mean = acts.ln1_mean + l*B*T; 
+        float* l_ln1_rstd = acts.ln1_rstd + l*B*T; 
+        floatX* l_ln1 = acts.ln1 + l*B*T*H; 
+        floatX* l_qkv = acts.qkv + l*B*T*3*H; 
+        floatX* l_preattn = acts.preattn + l*B*NH*T*T; 
+        floatX* l_attn = acts.attn + l*B*NH*T*T; 
+        floatX* l_attn_y = acts.attn_y + l*B*T*H; 
+        floatX* l_attn_proj = acts.attn_proj + l*B*T*H; 
+        floatX* l_resi_attn = acts.resi_attn + l*B*T*H; 
+        float* l_ln2_mean = acts.ln2_mean + l*B*T;
+        float* l_ln2_rstd = acts.ln2_rstd + l*B*T;
+        floatX* l_ln2 = acts.ln2 + l*B*T*H; 
+        floatX* l_mlph = acts.mlph + l*B*T*4*H;
+        floatX* l_mlph_gelu = acts.mlph_gelu + l*B*T*4*H; 
+        floatX* l_mlp_proj = acts.mlp_proj + l*B*T*H;
+        floatX* l_resi_mlp = acts.resi_mlp + l*B*T*H;
+
+        // attention block forward pass
+        layernorm_forward1(residual, l_ln1_mean, l_ln1_rstd, l_ln1w, l_ln1b, l_ln1, B, T, H, model->max_num_threads);
+        matmul_forward1(l_ln1, l_qkv, l_qkvw, l_qkvb, B, T, H, 3*H, model->sqrt_max_num_threads);
+        attention_forward1(l_qkv, l_preattn, l_attn, l_attn_y, B, T, H, NH, model->max_num_threads);
+        matmul_forward1(l_attn_y, l_attn_proj, l_attn_projw, l_attn_projb, B, T, H, H, model->sqrt_max_num_threads);
+        residual_forward1(l_attn_proj, residual, l_resi_attn, B*T*H, model->max_num_threads);
+        layernorm_forward1(l_resi_attn, l_ln2_mean, l_ln2_rstd, l_ln2w, l_ln2b, l_ln2, B, T, H, model->max_num_threads);
+        matmul_forward1(l_ln2, l_mlph, l_mlpw, l_mlpb, B, T, H, 4*H, model->sqrt_max_num_threads);
+        gelu_forward1(l_mlph, l_mlph_gelu, B*T*4*H, model->max_num_threads);
+        matmul_forward1(l_mlph_gelu, l_mlp_proj, l_mlp_projw, l_mlp_projb, B, T, 4*H, H, model->sqrt_max_num_threads);
+        residual_forward1(l_mlp_proj, l_resi_attn, l_resi_mlp, B*T*H, model->max_num_threads);
+    }
+    residual = acts.resi_mlp + (NL-1)*B*T*H; // (B, T, H)
+
+    // classifier
+    // The first index in the sequence T, corresponding to cls_token is responsible for 
+    // classification prediction.
+    matmul_forward_with_slicing_at_t2(residual, acts.logits, params.clsw, params.clsb, B, T, H, NC, 0, model->sqrt_max_num_threads);
+    softmax_forward1(acts.logits, acts.probs, B, NC, model->max_num_threads);
+    crossentropy_forward1(acts.probs, targets, acts.losses, B, NC, model->max_num_threads);
+
+    // Loss metric calculation 
+    //
+    //
 
 }

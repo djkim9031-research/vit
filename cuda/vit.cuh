@@ -312,3 +312,12 @@ void ViT_allocate_weights(ViTModel* model);
 // @param B                     batch size used at training
 //
 void ViT_allocate_states(ViTModel* model, int B);
+
+// ViT forward function
+//
+// @param model                 Model config for the current ViT model.
+// @param inputs                linearized input tensors (B, C, H, W)
+// @param targets               linearized ground truth label tensors (B, 1, 1)
+// @param B                     number of batches
+//
+void ViT_forward(ViTModel* model, const float* inputs, const int* targets, size_t B)
