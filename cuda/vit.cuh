@@ -5,6 +5,7 @@
 #include <assert.h>
 #include <string.h>
 #include <sys/stat.h>
+#include <cmath>
 
 // ----------- Layer implementations in CUDA -----------
 #include "conv2d.cuh"
@@ -16,10 +17,6 @@
 #include "activations.cuh"
 #include "softmax.cuh"
 
-
-// global vars containing information about the GPU this process is running on
-cudaDeviceProp deviceProp; 
-cudaStream_t main_stream;
 
 // ----------------------------------------------------------------------------
 // ViT model definition
@@ -228,6 +225,10 @@ inline void* malloc_and_point_activations(TensorSpec (&tensors)[NUM_ACTIVATION_T
 typedef struct{
 
     ViTConfig config;
+
+    // CUDA device
+    int deviceId;
+    cudaDeviceProp deviceProp;
 
     // The weights (params of the model), and their sizes.
     ParameterTensors params;

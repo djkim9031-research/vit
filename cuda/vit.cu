@@ -26,6 +26,12 @@ void ViT_init_common(ViTModel* model){
     model->labels_train = NULL;
     model->labels_test = NULL;
 
+    // Get the device ID
+    cudaGetDevice(&model->deviceId);
+
+    // Get the device properties
+    cudaGetDeviceProperties(&model->deviceProp, model->deviceId);
+
 }
 
 void ViT_allocate_weights(ViTModel* model){
@@ -73,8 +79,8 @@ void ViT_allocate_states(ViTModel* model, int B){
     cudaCheck(cudaMallocHost((void**)&model->cpu_loss, sizeof(float)));
 
     // AdamW optimizer parameters.
-    printf("Allocating %d MiB for AdamW optimizer state m.\n", sizeof(float)>>20);
-    printf("Allocating %d MiB for AdamW optimizer state v.\n", sizeof(float)>>20);
+    printf("Allocating %zu MiB for AdamW optimizer state m.\n", sizeof(float)>>20);
+    printf("Allocating %zu MiB for AdamW optimizer state v.\n", sizeof(float)>>20);
     assert(model->m_memory == nullptr);
     assert(model->v_memory == nullptr);
     cudaCheck(cudaMalloc((void**)&model->m_memory, sizeof(float)));
