@@ -278,3 +278,9 @@ typedef struct{
     int* labels_test;
 
 } ViTModel;
+
+// Model initializer for common parameters.
+//
+// @param model                 ViTModel pointer.
+//
+void ViT_init_common(ViTModel* model);
