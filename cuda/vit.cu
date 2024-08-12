@@ -25,5 +25,21 @@ void ViT_init_common(ViTModel* model){
     model->data_test = NULL;
     model->labels_train = NULL;
     model->labels_test = NULL;
-    
+
+}
+
+void ViT_allocate_weights(ViTModel* model){
+
+    // fill in all the parameter tensor dimensions and types.
+    fill_in_parameter_sizes(model->param_sizes, model->param_sizeof, &(model->config));
+    model->num_parameters = 0;
+    model->num_parameters_bytes = 0;
+    for(int i=0; i<NUM_PARAMETER_TENSORS; ++i){
+        model->num_parameters += model->param_sizes[i];
+        model->num_parameters_bytes += model->param_sizes[i] * model->param_sizeof[i];
+    }
+
+    // Create memory for model parameters on the deivce.
+    assert(model->params_memory == nullptr);
+    model->params_memory = malloc_and_point_parameters(&(model->params), model->param_sizes, model->param_sizeof);
 }

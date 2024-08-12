@@ -279,8 +279,19 @@ typedef struct{
 
 } ViTModel;
 
+
+// ----------------------------------------------------------------------------
+// ViT model functions.
+
+
 // Model initializer for common parameters.
 //
 // @param model                 ViTModel pointer.
 //
 void ViT_init_common(ViTModel* model);
+
+// Model parameter tensor memory allocator.
+//
+// @param model                 ViTModel pointer.
+//
+void ViT_allocate_weights(ViTModel* model);
