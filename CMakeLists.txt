@@ -37,15 +37,20 @@ add_gtest_executable(layernorm)
 add_gtest_executable(softmax)
 
 # CUDA project setup
+find_package(MPI REQUIRED)
 file(GLOB_RECURSE CUDA_SOURCES "cuda/*cuh" "cuda/*.cu")
 add_executable(vit_cuda ${CUDA_SOURCES})
 include_directories(/usr/include/)
 set_target_properties(vit_cuda PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/cuda LINKER_LANGUAGE CUDA)
-target_include_directories(vit_cuda PRIVATE ${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES})
-target_link_libraries(vit_cuda nccl)
+target_include_directories(vit_cuda PRIVATE ${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES} ${MPI_INCLUDE_PATH})
+target_link_libraries(vit_cuda nccl ${MPI_LIBRARIES})
 
+# nccl installation
 # wget https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2204/x86_64/cuda-keyring_1.0-1_all.deb
 # dpkg -i cuda-keyring_1.0-1_all.deb
 # apt-get update
 # apt install libnccl2-2.22.3-1_cuda12.2 libnccl-dev=2.22.3-1+cuda12.2
 
+# openmpi installation
+# apt-get install openmpi-bin libopenmpi-dev
+# 
