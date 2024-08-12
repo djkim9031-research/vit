@@ -224,3 +224,57 @@ inline void* malloc_and_point_activations(TensorSpec (&tensors)[NUM_ACTIVATION_T
 
     return acts_memory;
 }
+
+typedef struct{
+
+    ViTConfig config;
+
+    // The weights (params of the model), and their sizes.
+    ParameterTensors params;
+    size_t param_sizes[NUM_PARAMETER_TENSORS];
+    size_t param_sizeof[NUM_PARAMETER_TENSORS];
+    void* params_memory;
+    size_t num_parameters;
+    size_t num_parameters_bytes;
+
+    // Gradients of the weights.
+    ParameterTensors params_grads;
+    void* params_grads_memory;
+
+    // Buffers for the AdamW optimizer.
+    float* m_memory;
+    float* v_memory;
+    
+    // The activations of the model, and their sizes.
+    ActivationTensors acts;
+    TensorSpec acts_specs[NUM_ACTIVATION_TENSORS];
+    void* acts_memory;
+
+    // Gradients ofthe activations.
+    ActivationTensors acts_grads;
+    void* acts_grads_memory;
+
+    // Other run state configurations (training data)
+    int batch_size;
+    int curr_batch_idx;
+    float* inputs;
+    int* targets;
+    float mean_loss;
+    int nImages;
+    bool training_mode;
+
+    // configurations (test data)
+    float* inputs_test;
+    int* targets_test;
+    float mean_loss_test;
+    int nImages_test;
+    int batch_size_test;
+    int curr_batch_idx_test;
+
+    // Entirety of data
+    float* data_train;
+    float* data_test;
+    int* labels_train;
+    int* labels_test;
+
+} ViTModel;
