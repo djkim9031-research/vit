@@ -298,3 +298,11 @@ void ViT_init_common(ViTModel* model);
 // @param model                 ViTModel pointer.
 //
 void ViT_allocate_weights(ViTModel* model);
+
+// Model parameter grad tensor and Activation/grad tensor memory allocator.
+// Also allocates states for AdamW optimizer and misc. loss metrics.
+//
+// @param model                 ViTModel pointer.
+// @param B                     batch size used at training
+//
+void ViT_allocate_states(ViTModel* model, int B);

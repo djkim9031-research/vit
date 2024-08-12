@@ -84,6 +84,4 @@ void ViT_allocate_states(ViTModel* model, int B){
     size_t free, total;
     cudaCheck(cudaMemGetInfo(&free, &total));
     printf("[INFO] device memory usage %zd MiB / %zd MiB.\n", (total-free)/(1024*1024), total/(1024*1024));
-    
-
 }
