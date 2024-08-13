@@ -213,3 +213,40 @@ void ViT_forward(ViTModel* model, const float* inputs, const int* targets, size_
     // mean loss to be copied to host at logging step (completion of forward/backward/update cycle for the total steps)
 
 }
+
+void ViT_backward(ViTModel* model){
+    if(model->params_grads_memory == nullptr || model->acts_grads_memory == nullptr){
+        fprintf(stderr, "[ERROR] Need to allocate gradients before backward pass call.\n");
+        exit(EXIT_FAILURE);
+    }
+
+    // Number parameters
+    int B = model->batch_size;
+    int NC = model->config.num_classes;
+    int NL = model->config.num_layers;
+    int NH = model->config.num_attention_heads;
+    int im_C = model->config.channels;
+    int im_H = model->config.image_height;
+    int im_W = model->config.image_width;
+    int H = model->config.hidden_size;
+    int P = model->config.patch_size;
+    int NP = (im_W/P)*(im_H/P);
+    int T = NP + 1;
+
+    // Sanity check was performed during forward pass, so safe to skip
+
+    // Backward pass
+    ParameterTensors params = model->params;
+    ParameterTensors param_grads = model->params_grads;
+    ActivationTensors acts = model->acts;
+    ActivationTensors acts_grads = model->acts_grads;
+
+    // Start the chainrule by filling in dlosses with 1.f/B
+    float dloss_mean = 1.f/B;
+    for(int b=0; b<B; ++b) {acts_grads.losses[b] = dloss_mean;}
+
+    crossentropy_softmax_backward1(acts.probs, model->targets, acts_grads.logits, acts_grads.losses, B, NC, model->max_num_threads);
+    floatX* residual = acts.resi_mlp + (NL-1)*B*T*H; // (B, T, H)
+    floatX* dresidual = acts_grads.resi_mlp + (NL-1)*B*T*H;
+
+}

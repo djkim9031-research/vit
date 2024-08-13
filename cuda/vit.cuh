@@ -320,4 +320,10 @@ void ViT_allocate_states(ViTModel* model, int B);
 // @param targets               linearized ground truth label tensors (B, 1, 1)
 // @param B                     number of batches
 //
-void ViT_forward(ViTModel* model, const float* inputs, const int* targets, size_t B)
+void ViT_forward(ViTModel* model, const float* inputs, const int* targets, size_t B);
+
+// ViT backward function
+//
+// @param model                 Model config for the current ViT model.
+//
+void ViT_backward(ViTModel* model);
