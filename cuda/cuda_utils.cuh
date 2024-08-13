@@ -1,0 +1,55 @@
+#ifndef CUDA_UTILS_CUH
+#define CUDA_UTILS_CUH
+
+#include "common.cuh"
+
+// -----------------------------------------------------------------------------------------
+// Packed128 data structure that forces the compiler to use 128-bit load/store in GPUs that support
+// (the LDG.128 and STS.128 instructions.)
+// This is similar to the use of float4 in the case of 32-bit floats, but supports arbitrary precision.
+
+template<class ElementType>
+struct alignas(16) Packed128{
+    Packed128() = default;
+    __device__ explicit Packed128(int4 bits){
+        static_assert(sizeof(bits) == sizeof(payload), "Size mismatch.");
+        memcpy(&payload, &bits, sizeof(bits));
+    }
+
+    __device__ static Packed128 constant(ElementType value){
+        Packed128 result;
+        for(int k=0; k<size; ++k){
+            result.payload[k] = value;
+        }
+        return result;
+    }
+
+    __device__ static Packed128 zeros(){
+        return constant(0.f);
+    }
+
+    __device__ static Packed128 ones(){
+        return constant(1.f);
+    }
+
+    __device__ ElementType& operator[](int index){
+        return payload[index];
+    }
+
+    __device__ const ElementType& operator[](int index) const {
+        return payload[index];
+    }
+
+    __device__ int4 get_bits() const{
+        int4 bits;
+        static_assert(sizeof(bits) == sizeof(payload), "Size mismatch.");
+        memcpy(&bits, &payload, sizeof(bits));
+        return bits;
+    }
+
+
+    static constexpr const size_t size = sizeof(int4)/sizeof(ElementType);
+    ElementType payload[size];
+};
+
+#endif

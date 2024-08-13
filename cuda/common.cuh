@@ -1,6 +1,7 @@
 #pragma once
 #include <stdio.h>
 #include <stdlib.h>
+#include <cstdlib>
 #include <cuda_runtime.h>
 #include <cublas_v2.h>
 #include <cublasLt.h>
