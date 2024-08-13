@@ -4,13 +4,13 @@
 // -----------------------------------------------------------------------------------------
 // GPU kernels
 
-__global__ void matmul_forward_kernel1(float* x, float* y, float* weight, float* bias,
+__global__ void matmul_forward_kernel1(floatX* x, floatX* y, floatX* weight, floatX* bias,
                                        int B_in_r, int in_c, int ou_c){
     
     int B_in_r_dim = blockIdx.x * blockDim.x + threadIdx.x;
     int ou_c_dim = blockIdx.y * blockDim.y + threadIdx.y;
     if(B_in_r_dim < B_in_r && ou_c_dim < ou_c){
-        float val = (bias != NULL) ? bias[ou_c_dim] : 0.f;
+        floatX val = (bias != NULL) ? bias[ou_c_dim] : 0.f;
         for(int ic = 0; ic<in_c; ++ic){
             val += x[B_in_r_dim*in_c + ic] * weight[ic*ou_c + ou_c_dim];
         }
@@ -19,14 +19,14 @@ __global__ void matmul_forward_kernel1(float* x, float* y, float* weight, float*
     }
 }
 
-__global__ void matmul_backward_kernel1(float* x, float* weight, float* dx, float* dweight, float* dbias,
-                                        float* dy, int B_in_r, int in_c, int ou_c){
+__global__ void matmul_backward_kernel1(floatX* x, floatX* weight, floatX* dx, floatX* dweight, floatX* dbias,
+                                        floatX* dy, int B_in_r, int in_c, int ou_c){
     
     int B_in_r_dim = blockIdx.x * blockDim.x + threadIdx.x;
     int ou_c_dim = blockIdx.y * blockDim.y + threadIdx.y;
 
     if(B_in_r_dim < B_in_r && ou_c_dim < ou_c){
-        float grad = dy[B_in_r_dim*ou_c + ou_c_dim];
+        floatX grad = dy[B_in_r_dim*ou_c + ou_c_dim];
 
         if(dbias != NULL){
             atomicAdd(&dbias[ou_c_dim], grad);
@@ -50,7 +50,7 @@ __global__ void matmul_backward_kernel1(float* x, float* weight, float* dx, floa
 // @param H             hidden dimension size
 // @param t             index t in the sequence T to be sliced
 //
-__global__ void slice_tensor_at_t_kernel(float* orig, float* extracted,
+__global__ void slice_tensor_at_t_kernel(floatX* orig, floatX* extracted,
                                          int B, int T, int H, int t){
     
     int b_dim = blockIdx.x * blockDim.x + threadIdx.x;
@@ -75,15 +75,15 @@ __global__ void slice_tensor_at_t_kernel(float* orig, float* extracted,
 // @param NC            number of classes
 // @param t             index t in the sequence T to be sliced 
 //
-__global__ void matmul_forward_with_slicing_at_t_kernel(float* x, float* y, float* weight, float* bias,
+__global__ void matmul_forward_with_slicing_at_t_kernel(floatX* x, floatX* y, floatX* weight, floatX* bias,
                                                         int B, int T, int H, int NC, int t){
     
     int b_dim = blockIdx.x * blockDim.x + threadIdx.x;
     int nc_dim = blockIdx.y * blockDim.y + threadIdx.y;
     if(b_dim < B && nc_dim < NC){
-        float val = (bias != NULL) ? bias[nc_dim] : 0.f;
+        floatX val = (bias != NULL) ? bias[nc_dim] : 0.f;
         for(int h=0; h<H; ++h){
-            float extracted_x = x[b_dim*T*H + t*H + h];
+            floatX extracted_x = x[b_dim*T*H + t*H + h];
             val += extracted_x * weight[h*NC + nc_dim];
         }
 
@@ -105,19 +105,19 @@ __global__ void matmul_forward_with_slicing_at_t_kernel(float* x, float* y, floa
 // @param NC            number of classes
 // @param t             index t in the sequence T to be sliced 
 //
-__global__ void matmul_backward_with_slicing_at_t_kernel(float* x, float* weight, float* dx, float* dweight, float* dbias,
-                                                         float* dy, int B, int T, int H, int NC, int t){
+__global__ void matmul_backward_with_slicing_at_t_kernel(floatX* x, floatX* weight, floatX* dx, floatX* dweight, floatX* dbias,
+                                                         floatX* dy, int B, int T, int H, int NC, int t){
     
     int b_dim = blockIdx.x * blockDim.x + threadIdx.x;
     int nc_dim = blockIdx.y * blockDim.y + threadIdx.y;
     if(b_dim < B && nc_dim < NC){
-        float grad = dy[b_dim*NC + nc_dim];
+        floatX grad = dy[b_dim*NC + nc_dim];
 
         if(dbias!=NULL){
             atomicAdd(&dbias[nc_dim], grad);
         }
         for(int h=0; h<H; ++h){
-            float extracted_x = x[b_dim*T*H + t*H + h];
+            floatX extracted_x = x[b_dim*T*H + t*H + h];
 
             atomicAdd(&dweight[h*NC + nc_dim], grad*extracted_x);
             atomicAdd(&dx[b_dim*T*H + t*H + h], grad*weight[h*NC + nc_dim]);
@@ -128,7 +128,7 @@ __global__ void matmul_backward_with_slicing_at_t_kernel(float* x, float* weight
 // -----------------------------------------------------------------------------------------
 // kernel launcher
 
-void matmul_forward1(float* x, float* y, float* weight, float* bias,
+void matmul_forward1(floatX* x, floatX* y, floatX* weight, floatX* bias,
                      int B, int in_r, int in_c, int ou_c, const int sqrt_block_size){
     
     dim3 gridDim(ceil_div(B*in_r, sqrt_block_size), ceil_div(ou_c, sqrt_block_size));
@@ -136,19 +136,19 @@ void matmul_forward1(float* x, float* y, float* weight, float* bias,
     matmul_forward_kernel1<<<gridDim, blockDim>>>(x, y, weight, bias, B*in_r, in_c, ou_c);
 }
 
-void matmul_backward1(float* x, float* weight, float* dx, float* dweight, float* dbias,
-                      float* dy, int B, int in_r, int in_c, int ou_c, const int sqrt_block_size){
+void matmul_backward1(floatX* x, floatX* weight, floatX* dx, floatX* dweight, floatX* dbias,
+                      floatX* dy, int B, int in_r, int in_c, int ou_c, const int sqrt_block_size){
     
     dim3 gridDim(ceil_div(B*in_r, sqrt_block_size), ceil_div(ou_c, sqrt_block_size));
     dim3 blockDim(sqrt_block_size, sqrt_block_size);
     matmul_backward_kernel<<<gridDim, blockDim>>>(x, weight, dx, dweight, dbias, dy, B*in_r, in_c, ou_c);
 }
 
-void matmul_forward_with_slicing_at_t1(float* x, float* y, float* weight, float* bias,
+void matmul_forward_with_slicing_at_t1(floatX* x, floatX* y, floatX* weight, floatX* bias,
                                        int B, int T, int H, int NC, int t, const int sqrt_block_size){
     
-    float* extracted_x;
-    cudaMalloc(&extracted_x, B*H*sizeof(float));
+    floatX* extracted_x;
+    cudaMalloc(&extracted_x, B*H*sizeof(floatX));
 
     dim3 slice_gridDim(ceil_div(B, sqrt_block_size), ceil_div(H, sqrt_block_size));
     dim3 matmul_gridDim(ceil_div(B, sqrt_block_size), ceil_div(NC, sqrt_block_size));
@@ -161,7 +161,7 @@ void matmul_forward_with_slicing_at_t1(float* x, float* y, float* weight, float*
     cudaFree(extracted_x);
 }
 
-void matmul_forward_with_slicing_at_t2(float* x, float* y, float* weight, float* bias,
+void matmul_forward_with_slicing_at_t2(floatX* x, floatX* y, floatX* weight, floatX* bias,
                                        int B, int T, int H, int NC, int t, const int sqrt_block_size){
     
     dim3 gridDim(ceil_div(B, sqrt_block_size), ceil_div(NC, sqrt_block_size));
@@ -171,8 +171,8 @@ void matmul_forward_with_slicing_at_t2(float* x, float* y, float* weight, float*
 
 }
 
-void matmul_backward_with_slicing_at_t(float* x, float* weight, float* dx, float* dweight, float* dbias,
-                                       float* dy, int B, int T, int H, int NC, int t, const int sqrt_block_size){
+void matmul_backward_with_slicing_at_t(floatX* x, floatX* weight, floatX* dx, floatX* dweight, floatX* dbias,
+                                       floatX* dy, int B, int T, int H, int NC, int t, const int sqrt_block_size){
     
     dim3 gridDim(ceil_div(B, sqrt_block_size), ceil_div(NC, sqrt_block_size));
     dim3 blockDim(sqrt_block_size, sqrt_block_size);

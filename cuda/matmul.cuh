@@ -18,7 +18,7 @@
 // output tensor is, then, of [B_in_r, ou_c]
 // y = x*w + b
 //
-__global__ void matmul_forward_kernel1(float* x, float* y, float* weight, float* bias,
+__global__ void matmul_forward_kernel1(floatX* x, floatX* y, floatX* weight, floatX* bias,
                                        int B_in_r, int in_c, int ou_c);
 
 
@@ -33,8 +33,8 @@ __global__ void matmul_forward_kernel1(float* x, float* y, float* weight, float*
 // @param in_c          input col dimensions
 // @param ou_c          output col dimensions
 //
-__global__ void matmul_backward_kernel1(float* x, float* weight, float* dx, float* dweight, float* dbias,
-                                        float* dy, int B_in_r, int in_c, int ou_c);
+__global__ void matmul_backward_kernel1(floatX* x, floatX* weight, floatX* dx, floatX* dweight, floatX* dbias,
+                                        floatX* dy, int B_in_r, int in_c, int ou_c);
 
 // -----------------------------------------------------------------------------------------
 // kernel launcher
@@ -51,7 +51,7 @@ __global__ void matmul_backward_kernel1(float* x, float* weight, float* dx, floa
 // @param ou_c                  output col dimensions
 // @param sqrt_block_size       sqrt of CUDA block size (two dimension CUDA block is allocated per matmul op.)
 //
-void matmul_forward1(float* x, float* y, float* weight, float* bias,
+void matmul_forward1(floatX* x, floatX* y, floatX* weight, floatX* bias,
                      int B, int in_r, int in_c, int ou_c, const int sqrt_block_size);
 
 
@@ -68,8 +68,8 @@ void matmul_forward1(float* x, float* y, float* weight, float* bias,
 // @param ou_c          output col dimensions
 // @param sqrt_block_size  sqrt of CUDA block size
 //
-void matmul_backward1(float* x, float* weight, float* dx, float* dweight, float* dbias,
-                      float* dy, int B, int in_r, int in_c, int ou_c, const int sqrt_block_size);
+void matmul_backward1(floatX* x, floatX* weight, floatX* dx, floatX* dweight, floatX* dbias,
+                      floatX* dy, int B, int in_r, int in_c, int ou_c, const int sqrt_block_size);
 
 // Modified matmul forward kernel launcher 1
 // Modified matmul forward function, to be used prior to the classification stage of ViT.
@@ -87,7 +87,7 @@ void matmul_backward1(float* x, float* weight, float* dx, float* dweight, float*
 // @param t             index t in the sequence T to be sliced 
 // @param sqrt_block_size  sqrt of CUDA block size
 //
-void matmul_forward_with_slicing_at_t1(float* x, float* y, float* weight, float* bias,
+void matmul_forward_with_slicing_at_t1(floatX* x, floatX* y, floatX* weight, floatX* bias,
                                        int B, int T, int H, int NC, int t, const int sqrt_block_size);
 
 // Modified matmul forward kernel launcher 2
@@ -107,7 +107,7 @@ void matmul_forward_with_slicing_at_t1(float* x, float* y, float* weight, float*
 // @param t             index t in the sequence T to be sliced 
 // @param sqrt_block_size  sqrt of CUDA block size
 //
-void matmul_forward_with_slicing_at_t2(float* x, float* y, float* weight, float* bias,
+void matmul_forward_with_slicing_at_t2(floatX* x, floatX* y, floatX* weight, floatX* bias,
                                        int B, int T, int H, int NC, int t, const int sqrt_block_size);
 
 
@@ -127,5 +127,5 @@ void matmul_forward_with_slicing_at_t2(float* x, float* y, float* weight, float*
 // @param t             index t in the sequence T to be sliced 
 // @param sqrt_block_size  sqrt of CUDA block size
 // 
-void matmul_backward_with_slicing_at_t(float* x, float* weight, float* dx, float* dweight, float* dbias,
-                                       float* dy, int B, int T, int H, int NC, int t, const int sqrt_block_size);
+void matmul_backward_with_slicing_at_t(floatX* x, floatX* weight, floatX* dx, floatX* dweight, floatX* dbias,
+                                       floatX* dy, int B, int T, int H, int NC, int t, const int sqrt_block_size);

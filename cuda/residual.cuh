@@ -12,7 +12,7 @@
 // @param y             linearized output tensors
 // @param N             number of elements
 //
-__global__ void residual_forward_kernel1(float* x1, float* x2, float* y, int N);
+__global__ void residual_forward_kernel1(floatX* x1, floatX* x2, floatX* y, int N);
 
 
 // Residual connection, backward kernal function 1
@@ -23,7 +23,7 @@ __global__ void residual_forward_kernel1(float* x1, float* x2, float* y, int N);
 // @param dy            linearized output derivatives
 // @param N             number of elements
 //
-__global__ void residual_backward_kernel1(float* dx1, float* dx2, float* dy, int N);
+__global__ void residual_backward_kernel1(floatX* dx1, floatX* dx2, floatX* dy, int N);
 
 
 // -----------------------------------------------------------------------------------------
@@ -37,7 +37,7 @@ __global__ void residual_backward_kernel1(float* dx1, float* dx2, float* dy, int
 // @param N             number of elements
 // @param block_size    CUDA block size
 //
-void residual_forward1(float* x1, float* x2, float* y, int N, const int block_size);
+void residual_forward1(floatX* x1, floatX* x2, floatX* y, int N, const int block_size);
 
 // Residual connection backward kernal launcher 1
 //
@@ -48,4 +48,4 @@ void residual_forward1(float* x1, float* x2, float* y, int N, const int block_si
 // @param N             number of elements
 // @param block_size    CUDA block size
 //
-void residual_backward1(float* dx1, float* dx2, float* dy, int N, const int block_size);
+void residual_backward1(floatX* dx1, floatX* dx2, floatX* dy, int N, const int block_size);
