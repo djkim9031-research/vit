@@ -55,7 +55,7 @@ inline void gelu_backward(float* x, float* dx, float* dy, int N){
 // @param y             linearized output tensors
 // @param N             number of elements
 //
-__global__ void gelu_forward_kernal1(float* x, float* y, int N);
+__global__ void gelu_forward_kernal1(floatX* x, floatX* y, int N);
 
 // Gelu backward kernal function 1
 //
@@ -64,7 +64,7 @@ __global__ void gelu_forward_kernal1(float* x, float* y, int N);
 // @param dy            linearized output derivatives
 // @param N             number of elements
 //
-__global__ void gelu_backward_kernal1(float* x, float* dx, float* dy, int N);
+__global__ void gelu_backward_kernal1(floatX* x, floatX* dx, floatX* dy, int N);
 
 // -----------------------------------------------------------------------------------------
 // kernel launcher
@@ -76,7 +76,7 @@ __global__ void gelu_backward_kernal1(float* x, float* dx, float* dy, int N);
 // @param N             number of elements
 // @param block_size    CUDA block size
 //
-void gelu_forward1(float* x, float* y, int N, const int block_size);
+void gelu_forward1(floatX* x, floatX* y, int N, const int block_size);
 
 // Gelu backward kernel launcher 1
 //
@@ -86,4 +86,4 @@ void gelu_forward1(float* x, float* y, int N, const int block_size);
 // @param N             number of elements
 // @param block_size    CUDA block size
 //
-void gelu_backward1(float* x, float* dx, float* dy, int N, const int block_size);
+void gelu_backward1(floatX* x, floatX* dx, floatX* dy, int N, const int block_size);
