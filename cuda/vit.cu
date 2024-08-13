@@ -203,8 +203,13 @@ void ViT_forward(ViTModel* model, const float* inputs, const int* targets, size_
     softmax_forward1(acts.logits, acts.probs, B, NC, model->max_num_threads);
     crossentropy_forward1(acts.probs, targets, acts.losses, B, NC, model->max_num_threads);
 
-    // Loss metric calculation 
-    //
-    //
+    // loss metric calculation for the model.
+    // calculating mean loss on device.
+    *(model->accumulated_mean_loss) = 0.f;
+    for(int b=0; b<B; ++b){
+        *(model->accumulated_mean_loss) += acts.losses[b];
+    }
+
+    // mean loss to be copied to host at logging step (completion of forward/backward/update cycle for the total steps)
 
 }
