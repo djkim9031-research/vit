@@ -16,6 +16,9 @@ __host__ __device__ T ceil_div(T dividend, T divisor){
     return (dividend + divisor - 1)/divisor;
 }
 
+// Simple macro for SIMD operations
+#define CEIL_DIV(M, N) ((M+N-1)/N)
+
 // ----------------------------------------------------------------------------
 // Reduced/Mixed precision utilities
 
