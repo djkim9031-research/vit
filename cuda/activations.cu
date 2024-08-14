@@ -68,6 +68,7 @@ void gelu_forward1(floatX* x, floatX* y, int N, const int block_size){
 }
 
 void gelu_forward2(floatX* x, floatX* y, int N, const int block_size, cudaStream_t stream){
+    NVTX_RANGE_FN();
     assert(N % (block_size * x128::size) == 0);
     const int grid_size = CEIL_DIV(N, block_size * x128::size);
     gelu_forward_kernel2<<<grid_size, block_size, 0, stream>>>(x, y);
@@ -79,6 +80,7 @@ void gelu_backward1(floatX* x, floatX* dx, floatX* dy, int N, const int block_si
 }
 
 void gelu_backward2(floatX* x, floatX* derivatives, int N, const int block_size, cudaStream_t stream){
+    NVTX_RANGE_FN();
     assert(N % (block_size * x128::size) == 0);
     const int grid_size = CEIL_DIV(N, block_size * x128::size);
     gelu_backward_kernel2<<<grid_size, block_size, 0, stream>>>(x, derivatives);
