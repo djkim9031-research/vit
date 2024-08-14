@@ -2,6 +2,7 @@
 
 #include <assert.h>
 #include "common.cuh"
+#include "cuda_utils.cuh"
 
 #define ENABLE_BF16
 #define GELU_SCALING_FACTOR sqrtf(2.f/M_PI)
@@ -24,7 +25,7 @@ inline void gelu_forward(float* x, float* y, int N){
     }
 }
 
-// Gelu nonlinaerity with tanh approximation, backward function.
+// Gelu nonlinearity with tanh approximation, backward function.
 // Given q = sqrt(2/pi)*(x + 0.044715*x^3),
 // d(GELU(x))/dx = 0.5*(1+tanh(q)) + 0.5*x*((sech(q))^2)*sqrt(2/pi)*(1+0.134145*x^2)
 // @param x             linearized input tensors
@@ -49,22 +50,36 @@ inline void gelu_backward(float* x, float* dx, float* dy, int N){
 // -----------------------------------------------------------------------------------------
 // GPU kernels
 
-// Gelu forward kernal function 1
+// Gelu forward kernel function 1
 //
 // @param x             linearized input tensors
 // @param y             linearized output tensors
 // @param N             number of elements
 //
-__global__ void gelu_forward_kernal1(floatX* x, floatX* y, int N);
+__global__ void gelu_forward_kernel1(floatX* x, floatX* y, int N);
 
-// Gelu backward kernal function 1
+// Gelu forward kernel function 2 - SIMD
+//
+// @param x             linearized input tensors
+// @param y             linearized output tensors
+//
+__global__ void gelu_forward_kernel2(floatX* x, floatX* y);
+
+// Gelu backward kernel function 1
 //
 // @param x             linearized input tensors
 // @param dx            linearized input derivatives
 // @param dy            linearized output derivatives
 // @param N             number of elements
 //
-__global__ void gelu_backward_kernal1(floatX* x, floatX* dx, floatX* dy, int N);
+__global__ void gelu_backward_kernel1(floatX* x, floatX* dx, floatX* dy, int N);
+
+// Gelu backward kernel function 2 - SIMD
+//
+// @param x             linearized input tensors
+// @param derivatives   linearized derivatives [inplace op]
+//
+__global__ void gelu_backward_kernel2(floatX* x, floatX* derivatives);
 
 // -----------------------------------------------------------------------------------------
 // kernel launcher
@@ -78,6 +93,16 @@ __global__ void gelu_backward_kernal1(floatX* x, floatX* dx, floatX* dy, int N);
 //
 void gelu_forward1(floatX* x, floatX* y, int N, const int block_size);
 
+// Gelu forward kernel launcher 2 - SIMD
+//
+// @param x             linearized input tensors
+// @param y             linearized output tensors
+// @param N             number of elements
+// @param block_size    CUDA block size
+// @param stream        CUDA stream
+//
+void gelu_forward2(floatX* x, floatX* y, int N, const int block_size, cudaStream_t stream);
+
 // Gelu backward kernel launcher 1
 //
 // @param x             linearized input tensors
@@ -87,3 +112,13 @@ void gelu_forward1(floatX* x, floatX* y, int N, const int block_size);
 // @param block_size    CUDA block size
 //
 void gelu_backward1(floatX* x, floatX* dx, floatX* dy, int N, const int block_size);
+
+// Gelu backward kernel launcher 2 - SIMD
+//
+// @param x             linearized input tensors
+// @param derivatives   linearized derivatives [inplace op]
+// @param N             number of elements
+// @param block_size    CUDA block size
+// @param stream        CUDA stream
+//
+void gelu_backward2(floatX* x, floatX* derivatives, int N, const int block_size, cudaStream_t stream);
