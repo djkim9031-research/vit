@@ -7,6 +7,10 @@
 #include <cublasLt.h>
 #include <float.h>
 
+#include <nvtx3/nvToolsExt.h>
+#include <nvtx3/nvToolsExtCudaRt.h>
+#include <string>
+
 #define WARP_SIZE 32U
 
 // Calculate the min number of grid required given the total number of operations (dividend)
@@ -80,3 +84,18 @@ inline void cuda_check(cudaError_t error, const char *file, int line) {
     }
 };
 #define cudaCheck(err) (cuda_check(err, __FILE__, __LINE__))
+
+
+// ----------------------------------------------------------------------------
+// Nsys profiler utils
+
+class NvtxRange{
+    public:
+        NvtxRange(const char* s) {nvtxRangePush(s);}
+        NvtxRange(const std::string& base_str, int number){
+            std::string range_string = base_str + " " + std::to_string(number);
+            nvtxRangePush(range_string.c_str());
+        }
+        ~NvtxRange() {nvtxRangePop();}
+};
+#define NVTX_RANGE_FN() NvtxRange nvtx_range(__FUNCTION__)
