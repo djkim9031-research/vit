@@ -52,4 +52,37 @@ struct alignas(16) Packed128{
     ElementType payload[size];
 };
 
+// load a Packed128 from an aligned memory address
+template<class ElementType>
+__device__ Packed128<ElementType> load128(const ElementType* address){
+    return Packed128<ElementType>{*reinterpret_cast<const int4*>(address)};
+}
+
+// load a Packed128 from an aligned memory address with streaming cache hint
+template<class ElementType>
+__device__ Packed128<ElementType> load128cs(const ElementType* address){
+    return Packed128<ElementType>{__ldcs(reinterpret_cast<const int4*)(address)};
+}
+
+// store a Packed128 to an aligned memory address
+template<class ElementType>
+__device__ void store128(ElementType* target, Packed128<ElementType> value){
+    *reinterpret_cast<int4*>(target) = value.get_bits();
+}
+
+// store a Packed128 to an aligned memory address with streaming cache hint
+template<class ElementType>
+__device__ void store128cs(ElementType* target, Packed128<ElementType> value){
+    __stcs(reinterpret_cast<int4*>(target), value.get_bits());
+}
+
+// store a Packed128 to an aligned memory address while caching in L2 but bypassing L1
+template<class ElementType>
+__device__ void store128cg(ElemntType* target, Packed128<ElementType> value){
+    __stcg(reinterpret_cast<int4*>(target), value.get_bits());
+}
+
+typedef Packed128<float> f128;
+typedef Packed128<floatX> x128;
+
 #endif
