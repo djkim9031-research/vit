@@ -79,6 +79,21 @@ For training,
 ./cuda/vit_cuda
 ```
 
+#### Nsys profiler usage to monitor host<->device and kernel operation times
+If your Ubuntu system doesn't have the `nsight-systems` provided by NVIDIA, as per the installation guideline install it as below:
+```
+apt update
+apt install -y --no-install-recommends gnupg
+echo "deb http://developer.download.nvidia.com/devtools/repos/ubuntu$(source /etc/lsb-release; echo "$DISTRIB_RELEASE" | tr -d .)/$(dpkg --print-architecture) /" | tee /etc/apt/sources.list.d/nvidia-devtools.list
+apt-key adv --fetch-keys http://developer.download.nvidia.com/compute/cuda/repos/ubuntu1804/x86_64/7fa2af80.pub
+apt update
+apt install nsight-systems-cli
+```
+
+Then, do run a particular cuda executable with nsys profiler, run the command as below:
+```
+nsys profile ./cuda_executable
+```
 
 
 
