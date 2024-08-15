@@ -41,6 +41,21 @@ typedef float floatN;
 
 #endif
 
+// cuBLAS precision settings
+#if defined(ENABLE_BF16)
+#define CUBLAS_LOWP CUDA_R_16BF
+#elif defined(ENABLE_FP16)
+#define CUBLAS_LOWP CUDA_R_16F
+#else
+#define CUBLAS_LOWP CUDA_R_32F
+#endif
+
+// cuBLAS utils
+inline const size_t cublaslt_workspace_size = 4 * 1024 * 1024; // 4 MiB
+inline void* cublaslt_workspace = NULL;
+inline cublasComputeType_t cublas_compute = CUBLAS_COMPUTE_32F;
+inline cublasLtHandle_t cublaslt_handle;
+
 // ----------------------------------------------------------------------------
 // DType support
 
@@ -84,6 +99,15 @@ inline void cuda_check(cudaError_t error, const char *file, int line) {
     }
 };
 #define cudaCheck(err) (cuda_check(err, __FILE__, __LINE__))
+
+// cuBLAS error checking
+inline void cublas_check(cublasStatus_t status, const char* file, int line){
+    if(status != CUBLAS_STATUS_SUCCESS){
+        printf("[cuBLAS ERROR] error code: %d at file %s : %d\n", status, file, line);
+        exit(EXIT_FAILURE);
+    }
+}
+#define cublasCheck(status) {cublas_check((status), __FILE__, __LINE__);}
 
 
 // ----------------------------------------------------------------------------
