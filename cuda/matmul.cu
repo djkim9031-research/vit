@@ -180,3 +180,15 @@ void matmul_backward_with_slicing_at_t(floatX* x, floatX* weight, floatX* dx, fl
     matmul_backward_with_slicing_at_t_kernel<<<gridDim, blockDim>>>(x, weight, dx, dweight, dbias, dy, B, T, H, NC, t);
 
 }
+
+void matmul_cublaslt(const floatX* a, const floatX* b, const floatX* bias, floatX* d, int m, int n, int k,
+                     cudaStream_t stream, bool transA, bool transB, int batch_count,
+                     size_t strideA, size_t strideB, size_t strideD, bool accumulate,
+                     floatX* pre_gelu, bool backward){
+
+}
+
+void matmul_forward_cublaslt(floatX* x, floatX* y, floatX* weight, floatX* bias,
+                             int B, int in_r, int in_c, int ou_c, cudaStream_t stream, floatX* pre_gelu){
+
+}
