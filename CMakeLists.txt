@@ -40,10 +40,20 @@ add_gtest_executable(softmax)
 find_package(MPI REQUIRED)
 file(GLOB_RECURSE CUDA_SOURCES "cuda/*cuh" "cuda/*.cu")
 add_executable(vit_cuda ${CUDA_SOURCES})
-include_directories(/usr/include/)
+include_directories(/usr/include/ /usr/local/include)
 set_target_properties(vit_cuda PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/cuda LINKER_LANGUAGE CUDA)
 target_include_directories(vit_cuda PRIVATE ${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES} ${MPI_INCLUDE_PATH})
 target_link_libraries(vit_cuda nccl ${MPI_LIBRARIES})
+
+# Link against CUDA, cuBLAS, cuBLASLt, cuDNN.
+set(CUBLAS_LIBRARIES /usr/local/cuda/lib64/libcublas.so)
+set(CUBLASLT_LIBRARIES /usr/local/cuda/lib64/libcublasLt.so)
+set(CUDNN_INCLUDE_DIR /usr/local/cuda/cudnn/include)
+set(CUDNN_LIBRARIES /usr/local/cuda/cudnn/lib/libcudnn.so.8)
+include_directories(${CUDNN_INCLUDE_DIR})
+find_library(CUBLAS_LIBRARIES NAMES cublas)
+find_library(CUBLASLT_LIBRARIES NAMES cublasLt)
+target_link_libraries(vit_cuda ${CUBLAS_LIBRARIES} ${CUBLASLT_LIBRARIES} ${CUDNN_LIBRARIES})
 
 # nccl installation
 # wget https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2204/x86_64/cuda-keyring_1.0-1_all.deb
