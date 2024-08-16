@@ -86,6 +86,25 @@ inline DType dtype_of(float* f) { return DType::FP32; }
 inline DType dtype_of(half * f) { return DType::FP16; }
 inline DType dtype_of(nv_bfloat16 * f) { return DType::BF16; }
 
+// ----------------------------------------------------------------------------
+// Warp/block communication primitives
+
+// warp-level reduction for summing values
+__device__ inline float warpReduceSum(float val){
+    for(int offset=16; offset>0; offset/=2){
+        val += __shfl_xor_sync(0xFFFFFFFF, val, offset);
+    }
+    return val;
+}
+
+// warp-level reduction for finding the maximum value
+__device__ inline float warpReduceMax(float val){
+    for(int offset=16; offset>0; offset/=2){
+        val = fmaxf(val, __shfl_xor_sync(0xFFFFFFFF, val, offset));
+    }
+    return val;
+}
+
 
 // ----------------------------------------------------------------------------
 // checking utils
