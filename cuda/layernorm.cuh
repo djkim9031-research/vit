@@ -5,7 +5,7 @@
 // -----------------------------------------------------------------------------------------
 // GPU kernels
 
-// Layernorm function, forward kernal function 1
+// Layernorm function, forward kernel function 1
 // Layer normalization over the given input tensor
 // H dimension vector of activations gets normalized, then scaled and shifted.
 //
@@ -18,11 +18,30 @@
 // @param N             number of batches(B) x sequence length (T)
 // @param H             hidden size
 // 
-__global__ void layernorm_forward_kernal1(float* x, float* mean, float* rstd,
+__global__ void layernorm_forward_kernel1(float* x, float* mean, float* rstd,
                                           float* weight, float* bias, float* y,
                                           int N, int H);
 
-// Layernorm function, backward kernal function 1
+
+// Layernorm function, forward kernel function 2, with warp SIMT
+// Layer normalization over the given input tensor
+// H dimension vector of activations gets normalized, then scaled and shifted.
+//
+// @param x             linearized input tensors (batch_size B, sequence length T, hidden_size = H)
+// @param mean          linearized mean tensors over the last dimension (hidden size dim) [B, T]
+// @param rstd          linearized reciprocal standard deviation tensors (B, T)
+// @param weight        linearized weight(scale) tensor parameters (H)
+// @param bias          linearized bias(shift) tensor parameters (H)
+// @param y             linearized output tensors (B, T, H)
+// @param N             number of batches(B) x sequence length (T)
+// @param H             hidden size
+// 
+__global__ void layernorm_forward_kernel2(const floatX* __restrict__ x, float* __restrict__ mean, float* __restrict__ rstd,
+                                          const floatX* __restrict__ weight, const floatX* __restrict__ bias, floatX* __restrict__ y,
+                                          int N, int H);
+
+
+// Layernorm function, backward kernel function 1
 //
 // @param x             linearized input tensors (batch_size B, sequence length T, hidden_size = H)
 // @param mean          linearized mean tensors over the last dimension (hidden size dim) [B, T]
@@ -35,7 +54,7 @@ __global__ void layernorm_forward_kernal1(float* x, float* mean, float* rstd,
 // @param N             number of batches(B) x sequence length (T)
 // @param H             hidden size
 //
-__global__ void layernorm_backward_kernal1(float* x, float* mean, float* rstd, float* weight,
+__global__ void layernorm_backward_kernel1(float* x, float* mean, float* rstd, float* weight,
                                            float* dx, float* dweight, float* dbias, float* dy,
                                            int N, int H);
 

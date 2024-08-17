@@ -3,7 +3,7 @@
 // -----------------------------------------------------------------------------------------
 // GPU kernels
 
-__global__ void layernorm_forward_kernal1(float* x, float* mean, float* rstd,
+__global__ void layernorm_forward_kernel1(float* x, float* mean, float* rstd,
                                           float* weight, float* bias, float* y,
                                           int N, int H){
 
@@ -41,7 +41,31 @@ __global__ void layernorm_forward_kernal1(float* x, float* mean, float* rstd,
     }
 }
 
-__global__ void layernorm_backward_kernal1(float* x, float* mean, float* rstd, float* weight,
+__global__ void layernorm_forward_kernel2(const floatX* __restrict__ x, float* __restrict__ mean, float* __restrict__ rstd,
+                                          const floatX* __restrict__ weight, const floatX* __restrict__ bias, floatX* __restrict__ y,
+                                          int N, int H){
+    
+    int lane_Id = threadIdx.x % WARP_SIZE; // threadId inside a warp
+    int warp_Id = threadIdx.x / WARP_SIZE; // warpId
+    int num_warps = blockDim.x / WARP_SIZE; // number of warps
+
+    int idx = blockIdx.x * num_warps + warp_Id;
+    if(idx > N) {return;} // guard
+    
+    // the row of input that this group of threads is responsible for.
+    const floatX* x_curr = x + idx*H;
+
+    // mean
+    float sum = 0.f;
+    for(int i=lane_id; i<H; i+=WARP_SIZE){
+        sum += (float)x_curr[i];
+    }
+    sum = warpReduceSum(sum);
+
+    
+}
+
+__global__ void layernorm_backward_kernel1(float* x, float* mean, float* rstd, float* weight,
                                            float* dx, float* dweight, float* dbias, float* dy,
                                            int N, int H){
     
