@@ -52,7 +52,7 @@ enum UIDs{
 
 // Need a cache because graph->build_operation_graph() is slow but everything else seems fast
 using cache_type_fwd = std::map<std::tuple<int, int, int, int, int>, std::shared_ptr<fe::graph::Graph>>;
-using cahce_type_bwd = std::map<std::tuple<int, int, int, int>, std::shared_ptr<fe::graph::Graph>>;
+using cache_type_bwd = std::map<std::tuple<int, int, int, int>, std::shared_ptr<fe::graph::Graph>>;
 
 // Create cudnn handle (to be called at initialization)
 void create_cudnn(){
@@ -154,6 +154,49 @@ auto lookup_cache_or_build_graph_fwd(int B, int NH, int T, int HS, int is_infere
     }
 
     return graph;
+}
+
+// Caching/look up cache for attention backward pass
+// HS = H / NH where H is hidden_size
+// From input tensor of shape [B, T, 3H], QKV vector is obtained by
+// [B, T, 3H] => [B, T, 3, NH, HS] => permutation => [B, NH, T, HS] x 3 (for Q, K, V)
+// cuDNN can handle permutation directly without an external logic for permutation.
+// 
+//
+// @param B                     number of batches
+// @param NH                    number of heads
+// @param T                     sequence length
+// @param HS                    head size
+//
+auto lookup_cache_or_build_graph_bwd(int B, int NH, int T, int HS){
+    
+    static cache_type_bwd user_maintained_cache_bwd;
+    auto key = std::make_tuple(B, NH, T, HS);
+
+    // Cache lookup if it exists
+    auto it = user_maintained_cache_bwd.find(key);
+    if(it != user_maintained_cache_bwd.end()){
+        return it->second;
+    }
+
+    auto graph = std::make_shared<fe::graph::Graph>();
+    graph->set_io_data_type(CUDNN_16BIT)
+          .set_intermediate_data_type(fe::DataType_t::FLOAT)
+          .set_compute_data_type(fe::DataType_t::FLOAT);
+
+    // (B, N, 3, HS, HS) must come from input `x` (which means we also need to convert FloatX to FP16)
+    auto Q = graph->tensor(fe::graph::Tensor_attributes().set_name("Q")
+                                .set_dim({B, NH, T, HS})
+                                .set_uid(Q_UID)
+                                .set_stride({T*3*NH*HS, HS, 3*NH*HS, 1}));
+    auto K = graph->tensor(fe::graph::Tensor_attributes().set_name("K")
+                                .set_dim({B, NH, T, HS})
+                                .set_uid(K_UID)
+                                .set_stride({T*3*NH*HS, HS, 3*NH*HS, 1}));
+    auto V = graph->tensor(fe::graph::Tensor_attributes().set_name("V")
+                                .set_dim({B, NH, T, HS})
+                                .set_uid(V_UID)
+                                .set_stride({T*3*NH*HS, HS, 3*NH*HS, 1}));
 }
 
 // -----------------------------------------------------------------------------------------
