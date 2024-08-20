@@ -67,6 +67,95 @@ void destroy_cudnn(){
     cuDNNCheck(cudnnDestroy(cudnn_handle));
 }
 
+// Caching/look up cache for attention forward pass
+// HS = H / NH where H is hidden_size
+// From input tensor of shape [B, T, 3H], QKV vector is obtained by
+// [B, T, 3H] => [B, T, 3, NH, HS] => permutation => [B, NH, T, HS] x 3 (for Q, K, V)
+// cuDNN can handle permutation directly without an external logic for permutation.
+// 
+//
+// @param B                     number of batches
+// @param NH                    number of heads
+// @param T                     sequence length
+// @param HS                    head size
+// @param is_inference_only     bool for whether this is for inference_only or not
+//
+auto lookup_cache_or_build_graph_fwd(int B, int NH, int T, int HS, int is_inference_only){
+
+    static cache_type_fwd user_maintained_cache_fwd;
+    auto key = std::make_tuple(B, NH, T, HS, is_inference_only);
+
+    // Cache lookup if it exists
+    auto it = user_maintained_cache_fwd.find(key);
+    if(it != user_maintained_cache_fwd.end()){
+        return it->second;
+    }
+
+    // Graph build operation and create cache
+    auto graph = std::make_shared<fe::graph::Graph>();
+    graph->set_io_data_type(CUDNN_16BIT)
+          .set_intermediate_data_type(fe::DataType_t::FLOAT)
+          .set_compute_data_type(fe::DataType_t::FLOAT);
+
+    // Each Q, K, V is of shape [B, NH, T, HS]
+    auto Q = graph->tensor(fe::graph::Tensor_attributes().set_name("Q")
+                                .set_dim({B, NH, T, HS})
+                                .set_uid(Q_UID)
+                                .set_stride({T*3*NH*HS, HS, 3*NH*HS, 1}));
+    auto K = graph->tensor(fe::graph::Tensor_attributes().set_name("K")
+                                .set_dim({B, NH, T, HS})
+                                .set_uid(K_UID)
+                                .set_stride({T*3*NH*HS, HS, 3*NH*HS, 1}));
+    auto V = graph->tensor(fe::graph::Tensor_attributes().set_name("V")
+                                .set_dim({B, NH, T, HS})
+                                .set_uid(V_UID)
+                                .set_stride({T*3*NH*HS, HS, 3*NH*HS, 1}));
+    auto attn_scale = graph->tensor(fe::graph::Tensor_attributes().set_name("attn_scale")
+                                .set_dim({1, 1, 1, 1})
+                                .set_stride({1, 1, 1, 1})
+                                .set_uid(Attn_scale_UID)
+                                .set_is_pass_by_value(true)
+                                .set_data_type(fe::DataType_t::FLOAT));
+
+    // scale dot product attention options
+    auto sdpa_options = fe::graph::SDPA_attributes().set_name("flash_attention");
+    sdpa_options.set_is_inference(is_inference_only);
+    sdpa_options.set_attn_scale(attn_scale);
+    sdpa_options.set_causal_mask(false);
+
+    // Create the graph operation and get the output tensors back
+    auto [O, stats] = graph->sdpa(Q, K, V, sdpa_options);
+
+    // Output is (B, T, NH, HS) BF/FP16 and stats for backward pass is (B, NH, T) FP32
+    O->set_output(true).set_dim({B, NH, T, HS}).set_stride({T*NH*HS, HS, NH*HS, 1}).set_uid(O_UID);
+
+    assert(stats == nullptr || is_inference_onl false);
+    if(is_inference_only == false){
+        stats->set_output(true).set_data_type(fe::DataType_t::FLOAT)
+                               .set_dim({B, NH, T, 1})
+                               .set_stride({T*NH, T, 1, 1})
+                               .set_uid(Stats_UID);
+    }
+    cuDNNFECheck(graph->validate());
+
+    // Build the operation graph and execution part (very slow)
+    cuDNNFECheck(graph->build_operation_graph(cudnn_handle));
+    auto plans = graph->create_execution_plans({fe::HeurMode_t::A});
+    cuDNNFECheck(graph->check_support(cudnn_handle));
+    cuDNNFECheck(graph->build_plans(cudnn_handle));
+
+    // Reallocate the workspace if the required size is greater than the current workspace
+    if(graph->get_workspace_size() > cudnn_workspace_size){
+        if(cudnn_workspace_size > 0){
+            cudaCheck(cudaFree(cudnn_workspace));
+        }
+        cudnn_workspace_size = graph->get_workspace_size();
+        cudaCheck(cudaMalloc(&cudnn_workspace, cudnn_workspace_size));
+    }
+
+    return graph;
+}
+
 // -----------------------------------------------------------------------------------------
 // GPU kernels
 
