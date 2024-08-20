@@ -99,6 +99,18 @@ void attention_forward1(float* x, float* preattn, float* attn, float* y,
 // @param H                     hidden size
 // @param NH                    number of heads
 // @param block_size            CUDA block size
+//
 void attention_backward1(float* x, float* attn, 
                          float* dx, float* dpreattn, float* dattn, float* dy,
                          int B, int T, int H, int NH);
+
+// -----------------------------------------------------------------------------------------
+// CUDNN frontend utils
+
+// cuDNN handle creation
+//
+void create_cudnn();
+
+// cuDNN handle destruction
+//
+void destroy_cudnn();

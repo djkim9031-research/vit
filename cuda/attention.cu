@@ -1,5 +1,71 @@
 #include "attention.cuh"
 
+// -----------------------------------------------------------------------------------------
+// CUDNN frontend utils
+
+#define NOMINMAX
+#include <unistd.h>
+#include <cudnn_frontend.h>
+#include <map>
+
+namespace fe = cudnn_frontend;
+#if defined(ENABLE_FP32)
+static assert(false, "cuDNN is not supported in FP32 mode.");
+#elif defined(ENABLE_FP16)
+#define CUDNN_16BIT fe::DataType_t::HALF
+#else // Default to bfloat16
+#define CUDNN_16BIT fe::DataType_t::HALF // testing with FP16 atm.
+#endif
+
+static cudnnHandle_t cudnn_handle;
+static size_t cudnn_workspace_size = 0; // dynamically allocated as needed (up to 256 MiB)
+static void* cudnn_workspace = NULL;
+
+static void cudnn_check(cudnnStatus_t error, const char* file, int line){
+    if(error != CUDNN_STATUS_SUCCESS){
+        printf("[CUDNN ERROR] at file %s:%d:\n%s\n", file, line, cudnnGetErrorString(error));
+        exit(EXIT_FAILURE);
+    }
+}
+#define cuDNNCheck(err) (cudnn_check(err, __FILE__, __LINE__))
+
+static void cudnnFE_check(const fe::error_object& e, const char* file, int line){
+    if(!e.is_good()){
+        printf("[CUDNN FE ERROR] at file %s:%d\n%s\n", file, line, e.err_msg.c_str());
+        exit(EXIT_FAILURE);
+    }
+}
+#define cuDNNFECheck(err) (cudnnFE_check(err, __FILE__, __LINE__))
+
+enum UIDs{
+    Q_UID,
+    K_UID,
+    V_UID,
+    Attn_scale_UID,
+    O_UID,
+    Stats_UID,
+    dO_UID,
+    dQ_UID,
+    dK_UID,
+    dV_UID
+};
+
+// Need a cache because graph->build_operation_graph() is slow but everything else seems fast
+using cache_type_fwd = std::map<std::tuple<int, int, int, int, int>, std::shared_ptr<fe::graph::Graph>>;
+using cahce_type_bwd = std::map<std::tuple<int, int, int, int>, std::shared_ptr<fe::graph::Graph>>;
+
+// Create cudnn handle (to be called at initialization)
+void create_cudnn(){
+    cuDNNCheck(cudnnCreate(&cudnn_handle));
+}
+
+// Destroy cudnn handle (to be released at the end)
+void destroy_cudnn(){
+    if(cudnn_workspace != NULL){
+        cudaCheck(cudaFree(cudnn_workspace));
+    }
+    cuDNNCheck(cudnnDestroy(cudnn_handle));
+}
 
 // -----------------------------------------------------------------------------------------
 // GPU kernels
@@ -177,3 +243,4 @@ void attention_backward1(float* x, float* attn,
 
     attention_backward_kernel1<<<num_blocks, block_size>>>(x, attn, dx, dpreattn, dattn, dy, B, T, H, NH);
 }
+
