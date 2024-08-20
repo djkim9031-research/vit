@@ -55,12 +55,28 @@ __global__ void layernorm_forward_kernel2(const floatX* __restrict__ x, float* _
     // the row of input that this group of threads is responsible for.
     const floatX* x_curr = x + idx*H;
 
-    // mean
+    // mean [B x T of them, and each mean element is calculated by each warp]
     float sum = 0.f;
     for(int i=lane_id; i<H; i+=WARP_SIZE){
         sum += (float)x_curr[i];
     }
     sum = warpReduceSum(sum);
+    float m = sum / H;
+    if(lane_id==0 && mean != nullptr){
+        __stcs(mean + idx, m);
+    }
+
+    // rstd
+    sum = 0.f;
+    for(int i=lane_id; i<H; i+=WARP_SIZE){
+        float diff = (float)x_curr[i] - m;
+        sum += diff*diff;
+    }
+    sum = warpReduceSum(sum);
+    float s = rsqrtf(sum/H + 1e-5f);
+    if(lane_id==0 && rstd != nullptr){
+        __stcs(rstd + idx, s);
+    }
 
     
 }
