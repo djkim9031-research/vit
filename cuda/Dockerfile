@@ -20,13 +20,15 @@ RUN apt-get update && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
-# Download and install cuDNN
-RUN mkdir -p /var/cudnn-local-repo && \
-    wget https://developer.download.nvidia.com/compute/redist/cudnn/v8.8.0/local_installers/12.0/cudnn-local-repo-ubuntu2204-8.8.0.121_1.0-1_amd64.deb -P /var/cudnn-local-repo && \
-    apt install /var/cudnn-local-repo/cudnn-local-repo-ubuntu2204-8.8.0.121_1.0-1_amd64.deb
+# Download and install cuDNN(9.3.0)
+RUN wget https://developer.download.nvidia.com/compute/cudnn/9.3.0/local_installers/cudnn-local-repo-ubuntu2204-9.3.0_1.0-1_amd64.deb && \
+    dpkg -i cudnn-local-repo-ubuntu2204-9.3.0_1.0-1_amd64.deb && \
+    cp /var/cudnn-local-repo-ubuntu2204-9.3.0/cudnn-*-keyring.gpg /usr/share/keyrings/ && \
+    apt-get update && \
+    apt-get -y install cudnn-cuda-12
 
 # Install Python packages
-RUN pip3 install numpy torch==1.13.1 torchvision==0.14.1 matplotlib==3.7.1
+RUN pip3 install numpy==2.1.0 torch==2.4.0 torchvision==0.19.0 matplotlib==3.7.1
 
 # Install CMake 3.29.6
 RUN cd /opt && wget https://github.com/Kitware/CMake/releases/download/v3.29.6/cmake-3.29.6.tar.gz && \
