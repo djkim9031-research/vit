@@ -197,6 +197,52 @@ auto lookup_cache_or_build_graph_bwd(int B, int NH, int T, int HS){
                                 .set_dim({B, NH, T, HS})
                                 .set_uid(V_UID)
                                 .set_stride({T*3*NH*HS, HS, 3*NH*HS, 1}));
+    auto O = graph->tensor(fe::graph::Tensor_attributes().set_name("O")
+                                .set_dim({B, NH, T, HS})
+                                .set_uid(O_UID)
+                                .set_stride({T*NH*HS, HS, NH*HS, 1}));
+    auto dO = graph->tensor(fe::graph::Tensor_attributes().set_name("dO")
+                                .set_dim({B, NH, T, HS})
+                                .set_uid(dO_UID)
+                                .set_stride({T*NH*HS, HS, NH*HS, 1}));
+    auto stats = graph->tensor(fe::graph::Tensor_attributes().set_name("stats")
+                                .set_dim({1, 1, 1, 1})
+                                .set_stride({1, 1, 1, 1})
+                                .set_uid(Attn_scale_UID)
+                                .set_is_pass_by_value(true)
+                                .set_data_type(fe::DataType_t::FLOAT));
+    auto sdpa_backward_options = fe::graph::SDPA_backward_attributes().set_name("flash_attention_backward")
+                                .set_deterministic_algorithm(true) // cuDNN_Frontend >= 1.5 (version req.)
+                                .set_causal_mask(false)
+                                .set_attn_scale(attn_scale);
+
+    // Create the graph operation and get the output tensors back
+    auto [dQ, dK, dV] = graph->sdpa_backward(Q, K, V, O, dO, stats, sdpa_backward_options);
+
+    dQ->set_output(true).set_dim({B, NH, T, HS}).set_stride({T*3*NH*HS, HS, 3*NH*HS, 1}).set_uid(dQ_UID);
+    dK->set_output(true).set_dim({B, NH, T, HS}).set_stride({T*3*NH*HS, HS, 3*NH*HS, 1}).set_uid(dK_UID);
+    dV->set_output(true).set_dim({B, NH, T, HS}).set_stride({T*3*NH*HS, HS, 3*NH*HS, 1}).set_uid(dV_UID);
+    cuDNNFECheck(graph->validate());
+
+    // Build the operation graph and execution part (very slow)
+    cuDNNFECheck(graph->build_operation_graph(cudnn_handle));
+    auto plans = graph->create_execution_plans({fe::HeurMode_t::A});
+    cuDNNFECheck(graph->check_support(cudnn_handle));
+    cuDNNFECheck(graph->build_plans(cudnn_handle));
+
+    // Reallocate the workspace if the required size is greater than the current workspace.
+    // By default, cuDNN uses up to 256 MiB of workspace, so we don't want to just allocate the maximum.
+    if(graph->get_workspace_size() > cudnn_workspace_size){
+        if(cudnn_workspace_size > 0){
+            cudaCheck(cudaFree(cudnn_workspace));
+        }
+        cudnn_workspace_size = graph->get_workspace_size();
+        cudaCheck(cudaMalloc(&cudnn_workspace, cudnn_workspace_size));
+    }
+
+    user_maintained_cache_bwd.insert({key, graph});
+    return graph;
+    
 }
 
 // -----------------------------------------------------------------------------------------
