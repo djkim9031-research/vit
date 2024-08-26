@@ -78,7 +78,15 @@ __global__ void layernorm_forward_kernel2(const floatX* __restrict__ x, float* _
         __stcs(rstd + idx, s);
     }
 
-    
+    // finalize normalization and scaling by weight/bias
+    floatX* y_curr = y + idx*H;
+    for(int i=lane_id; i<H; i += WARP_SIZE){
+        // load and store using the `cs` streaming hint to the compiler.
+        // indicating that this data will not be reused soon, and can be streamed through the caches
+        // this allows the threads to get more cache-hits for the (shared) weight and bias parameters
+        float n = s * ((float)__ldcs(x_curr + i) - m);
+        __stcs(y_curr + i, (floatX)(n*(float)weight[i] + (float)bias[i]));
+    }
 }
 
 __global__ void layernorm_backward_kernel1(float* x, float* mean, float* rstd, float* weight,
