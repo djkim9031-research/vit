@@ -84,6 +84,7 @@ __global__ void layernorm_forward_kernel2(const floatX* __restrict__ x, float* _
         // load and store using the `cs` streaming hint to the compiler.
         // indicating that this data will not be reused soon, and can be streamed through the caches
         // this allows the threads to get more cache-hits for the (shared) weight and bias parameters
+        // .cs operator ref: https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#cache-operators
         float n = s * ((float)__ldcs(x_curr + i) - m);
         __stcs(y_curr + i, (floatX)(n*(float)weight[i] + (float)bias[i]));
     }

@@ -59,6 +59,7 @@ __device__ Packed128<ElementType> load128(const ElementType* address){
 }
 
 // load a Packed128 from an aligned memory address with streaming cache hint
+// .cs operator ref: https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#cache-operators
 template<class ElementType>
 __device__ Packed128<ElementType> load128cs(const ElementType* address){
     return Packed128<ElementType>{__ldcs(reinterpret_cast<const int4*)(address)};
