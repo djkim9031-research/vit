@@ -145,7 +145,7 @@ void layernorm_forward1(float* x, float* mean, float* rstd,
                         int B, int T, int H, const int block_size){
     const int N = B*T;
     const int grid_size = ceil_div(N, block_size);
-    layernorm_forward_kernal1<<<grid_size, block_size>>>(x, mean, rstd, weight, bias, y, N, H);
+    layernorm_forward_kernel1<<<grid_size, block_size>>>(x, mean, rstd, weight, bias, y, N, H);
 }
 
 void layernorm_backward1(float* x, float* mean, float* rstd, float* weight,
@@ -153,5 +153,5 @@ void layernorm_backward1(float* x, float* mean, float* rstd, float* weight,
                          int B, int T, int H, const int block_size){
     const int N = B*T;
     const int grid_size = ceil_div(N, block_size);
-    layernorm_backward_kernal1<<<grid_size, block_size>>>(x, mean, rstd, weight, dx, dweight, dbias, dy, N, H);
+    layernorm_backward_kernel1<<<grid_size, block_size>>>(x, mean, rstd, weight, dx, dweight, dbias, dy, N, H);
 }
