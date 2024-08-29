@@ -1,6 +1,7 @@
 #pragma once
 
 #include "common.cuh"
+#include "cuda_utils.cuh"
 
 // -----------------------------------------------------------------------------------------
 // GPU kernels
@@ -57,6 +58,26 @@ __global__ void layernorm_forward_kernel2(const floatX* __restrict__ x, float* _
 __global__ void layernorm_backward_kernel1(float* x, float* mean, float* rstd, float* weight,
                                            float* dx, float* dweight, float* dbias, float* dy,
                                            int N, int H);
+
+
+// Layernorm function, backward kernel function 2, with warp SIMT and x128 SIMD
+//
+// @param x             linearized input tensors (batch_size B, sequence length T, hidden_size = H)
+// @param mean          linearized mean tensors over the last dimension (hidden size dim) [B, T]
+// @param rstd          linearized reciprocal standard deviation tensors (B, T)
+// @param weight        linearized weight(scale) tensor parameters (H)
+// @param dx            linearized input tensor derivatives
+// @param dweight       linearized weight tensor derivatives
+// @param dbias         linearized bias tensor derivatives
+// @param dy            linearized output tensor derivatives
+// @param B             number of batches
+// @param T             sequence length
+// @param H             hidden size
+//
+__global__ void __launch_bounds_(512, 2)
+    layernorm_backward_kernel2(const floatX* x, const float* mean, const float* rstd, const floatX* weight,
+                               floatX* dx, floatX* dweight, floatX* dbias, const floatX* dy,
+                               int B, int T, int H);
 
 // -----------------------------------------------------------------------------------------
 // kernel launcher

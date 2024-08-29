@@ -137,6 +137,29 @@ __global__ void layernorm_backward_kernel1(float* x, float* mean, float* rstd, f
     }
 }
 
+__global__ void __launch_bounds_(512, 2)
+    layernorm_backward_kernel2(const floatX* x, const float* mean, const float* rstd, const floatX* weight,
+                               floatX* dx, floatX* dweight, floatX* dbias, const floatX* dy,
+                               int B, int T, int H){
+    
+    int BLOCK_SIZE = blockDim.x;
+    int num_warps_per_block = BLOCK_SIZE / WARP_SIZE; // number of warps in a block
+    extern __shared__ float shared[]; // dynamically allocated params (shared among threads in the same block)
+
+    int warp_Id = threadIdx.x / WARP_SIZE; // warp index within a block
+    int base_Id = blockIdx.x * num_warps_per_block + warp_Id;
+    int lane_Id = threadIdx.x % WARP_SIZE; // thread index within a warp
+    int num_warps_per_grid = gridDim.x * num_warps_per_block;
+    int H_per_iteration = WARP_SIZE * x128::size; // how many elements in H vector is covered by SIMD and warp.
+    int iterations_H = CEIL_DIV(H, H_per_iteration); // how many iterations are needed to cover the entire elements in H vector with SIMD and warp.
+
+    // The first half of the shared memory is for bias, and the second is for weight
+    size_t rounded_H = CEIL_DIV(H, (32 * x128::size)) * (32 * x128::size); // number of H elements rounded up to the nearest multiple of 32 x x128::size
+    float* dbias_shared = shared;
+    float* dweight_shared = shared + rounded_H;
+
+}
+
 // -----------------------------------------------------------------------------------------
 // kernel launcher
 
