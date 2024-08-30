@@ -158,6 +158,12 @@ __global__ void __launch_bounds_(512, 2)
     float* dbias_shared = shared;
     float* dweight_shared = shared + rounded_H;
 
+    // init shared memory to zero
+    for(int i=threadIdx.x * f128::size; i < rounded_H; i+=BLOCK_SIZE*f128::size){
+        store128(dbias_shared + i, f128::zeros());
+        store128(dweight_shared + i, f128::zeros());
+    }
+
 }
 
 // -----------------------------------------------------------------------------------------
