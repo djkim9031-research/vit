@@ -194,6 +194,26 @@ __global__ void __launch_bounds_(512, 2)
         }
         dnorm_mean = warpReduceSum(dnorm_mean)/H;
         dnorm_norm_mean = warpReduceSum(dnorm_norm_mean)/H;
+
+        for(int h=0; h<iterations_H; ++h){
+            int global_h_idx = (lane_Id * x128::size) + (h * H_per_iteration); // per iteration covers warp_size * x128::size. 
+                                                                               // This idx corresponds to an element this thread (lane_Id) in current warp at current h-th iteration.
+                                                                               // The current thread contains SIMD vector
+            
+            x128 dy128_curr = x128::zeros();
+            x128 x128_curr = x128::zeros();
+            x128 dx128_curr = x128::zeros();
+            x128 weight128_curr = x128::zeros();
+
+            if(global_h_idx < H){
+                dy128_curr = load128cs(dy_bt + global_h_idx);
+                x128_curr = load128cs(x_bt + global_h_idx);
+                dx128_curr = load128cs(dx_bt + global_h_idx);
+                weight128_curr = load128cs(weight + global_h_idx);
+            }
+
+            
+        }
     }
 
 }
