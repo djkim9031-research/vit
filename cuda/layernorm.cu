@@ -163,6 +163,13 @@ __global__ void __launch_bounds_(512, 2)
         store128(dbias_shared + i, f128::zeros());
         store128(dweight_shared + i, f128::zeros());
     }
+    __syncthreads();
+
+    for(int bt=base_Id; bt<B*T; bt+=num_warps_per_grid) {  // b, t dim handled per warp
+        const floatX* dy_bt = dy + bt*H;
+        const floatX* x_bt = x + bt*H;
+        floatX* dx_bt = dx + bt*H;
+    }
 
 }
 
