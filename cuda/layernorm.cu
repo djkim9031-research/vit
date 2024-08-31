@@ -169,6 +169,31 @@ __global__ void __launch_bounds_(512, 2)
         const floatX* dy_bt = dy + bt*H;
         const floatX* x_bt = x + bt*H;
         floatX* dx_bt = dx + bt*H;
+
+        // first: two reduce operations
+        // Obtain derivatives of norm (n = s*(x - m) in forward pass)
+        // to reduce ops
+        float dnorm_mean = 0.f; // mean of dn
+        float dnorm_norm_mean = 0.f; // mean of dn * n
+        for(int h=lane_Id * x128::size; h<H; h+=WARP_SIZE*x128::size){ // h dim handled per thread in warp
+            x128 dy128_h = load128(dy_bt + h);
+            x128 x128_h = load128(x_bt + h);
+            x128 weight128_h = load128(weight + h);
+
+            const float curr_mean = mean[bt];
+            const float curr_rstd = rstd[bt];
+
+            for(int k=0; k<x128::size; ++k){
+                // per data in SIMD, 
+                float n = curr_rstd * ((float)x128_h[k]- curr_mean);
+                // since y = weight * n + bias, n' = (dn) = dy* weight
+                float dn = (float)dy128_h[k] * (float)weight128_h[k];
+                dnorm_mean += dn;
+                dnorm_norm_mean += dn * n;
+            }
+            dnorm_mean = warpReduceSum(dnorm_mean)/H;
+            dnorm_norm_mean = warpReduceSum(dnorm_norm_mean)/H;
+        }
     }
 
 }
