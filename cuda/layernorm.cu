@@ -191,9 +191,9 @@ __global__ void __launch_bounds_(512, 2)
                 dnorm_mean += dn;
                 dnorm_norm_mean += dn * n;
             }
-            dnorm_mean = warpReduceSum(dnorm_mean)/H;
-            dnorm_norm_mean = warpReduceSum(dnorm_norm_mean)/H;
         }
+        dnorm_mean = warpReduceSum(dnorm_mean)/H;
+        dnorm_norm_mean = warpReduceSum(dnorm_norm_mean)/H;
     }
 
 }
