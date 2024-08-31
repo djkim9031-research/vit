@@ -212,7 +212,15 @@ __global__ void __launch_bounds_(512, 2)
                 weight128_curr = load128cs(weight + global_h_idx);
             }
 
-            
+            for(int o=0; o<x128::size/f128::size; ++o){
+                f128 dbias_f;
+                f128 dweight_f;
+                for(int i=0; i<f128::size; ++i){
+                    
+                }
+            }
+
+
         }
     }
 
