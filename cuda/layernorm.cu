@@ -243,11 +243,27 @@ __global__ void __launch_bounds_(512, 2)
                     dx128_curr[data_idx] = (floatX)((float)dx128_curr[data_idx] + dval);
                 }
 
-                // The idea is if warp_Id != 0, then results are stored in shared memory
-                // if warp_Id == 0, the results from shared memory are reduce summed, then store the final result in global memory.
+                // The idea is if warp_Id != 0, then results are stored in temporary shared memory (which is shared location with shared)
+                // if warp_Id == 0, the results from temporary shared memory are first mapped to shared., then reduced summed to global memory.
                 if(warp_Id != 0){
                     store128(dbias_tmp_shared + threadIdx.x * f128::size, dbias_f);
                     store128(dweight_tmp_shared + threadIdx.x * f128::size, dweight_f);
+                }
+                __syncthreads();
+                if(warp_Id == 0){ // aggregating dbias and dweight results from warp_Id !=0 threads with dbias_f and dweight_f from warp_Id == 0.
+                    for(int j=1; j<num_warps_per_block; ++j){
+                        f128 dbias_tmp = load128(dbias_tmp_shared + f128::size*(threadIdx.x + j*WARP_SIZE));
+                        f128 dweight_tmp = load128(dweight_tmp_shared + f128::size*(threadIdx.x + j*WARP_SIZE));
+                        for(int i=0; i<f128::size; ++i){
+                            dbias_f[i] += dbias_tmp[i];
+                            dweight_f[i] += dweight_tmp[i];
+                        }
+                    }
+                }
+                __syncthreads();
+                if(warp_Id == 0){
+                    f128 db_old = load128(dbias_shared + global_h_idx + f128::size * o);
+                    f128 dw_old = load128(dweight_shared + global_h_idx + f128::size * o);
                 }
             }
 
