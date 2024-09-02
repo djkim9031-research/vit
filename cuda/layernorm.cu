@@ -264,6 +264,12 @@ __global__ void __launch_bounds_(512, 2)
                 if(warp_Id == 0){
                     f128 db_old = load128(dbias_shared + global_h_idx + f128::size * o);
                     f128 dw_old = load128(dweight_shared + global_h_idx + f128::size * o);
+                    for(int i=0; i<f128::size; ++i){
+                        dbias_f[i] += db_old;
+                        dweight_f[i] += dw_old;
+                    }
+                    store128(dbias_shared + global_h_idx + f128::size * o, dbias_f);
+                    store128(dweight_shared + global_h_idx + f128::size * o, dweight_f);
                 }
             }
 
