@@ -158,6 +158,14 @@ __global__ void __launch_bounds_(512, 2)
     float* dbias_shared = shared;
     float* dweight_shared = shared + rounded_H;
 
+    // Warp zero doesn't actually write to the _tmp_shared memory location, so we don't need to reserve memory here.
+    // One solution is to change the addressing below to use (threadIdx.x - 32) as offset, but that causes register spills.
+    // Instead, we mess with the base pointer here, which doesn't increase the register usage.
+    // `_tmp_shared` is used only for warp_Id != 0 for accumulating partial results to in the block's shared memory, which warp_Id == 0 will load once finalized,
+    // to calculate the final results and save to global memory.
+    float* dbias_tmp_shared = shared + 2*rounded_H - WARP_SIZE*f128::size; 
+    float* dweight_tmp_shared = shared + 2*rounded_H + f128::size * BLOCK_SIZE - 2*WARP_SIZE*f128::size; 
+
     // init shared memory to zero
     for(int i=threadIdx.x * f128::size; i < rounded_H; i+=BLOCK_SIZE*f128::size){
         store128(dbias_shared + i, f128::zeros());
@@ -212,7 +220,7 @@ __global__ void __launch_bounds_(512, 2)
                 weight128_curr = load128cs(weight + global_h_idx);
             }
 
-            for(int o=0; o<x128::size/f128::size; ++o){
+            for(int o=0; o<x128::size/f128::size; ++o){ // for half, 2 iterations, for single 1 iteration, for double 0 iteration. (double not supported)
                 f128 dbias_f;
                 f128 dweight_f;
                 for(int i=0; i<f128::size; ++i){
@@ -233,6 +241,13 @@ __global__ void __launch_bounds_(512, 2)
                     dval -= norm_bti * dnorm_norm_mean; // term 3
                     dval *= rstd[bt]; // scale
                     dx128_curr[data_idx] = (floatX)((float)dx128_curr[data_idx] + dval);
+                }
+
+                // The idea is if warp_Id != 0, then results are stored in shared memory
+                // if warp_Id == 0, the results from shared memory are reduce summed, then store the final result in global memory.
+                if(warp_Id != 0){
+                    store128(dbias_tmp_shared + threadIdx.x * f128::size, dbias_f);
+                    store128(dweight_tmp_shared + threadIdx.x * f128::size, dweight_f);
                 }
             }
 
