@@ -273,9 +273,14 @@ __global__ void __launch_bounds_(512, 2)
                 }
             }
 
-
+            if(global_h_idx < H){
+                // Cache in L2 as this is read by the next kernel, but bypass L1 to minimize thrashing.
+                store128cg(dx_bt + global_h_idx, dx128_curr);
+            }
         }
     }
+    __syncthreads();
+    
 
 }
 
