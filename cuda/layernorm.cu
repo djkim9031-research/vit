@@ -216,7 +216,23 @@ __global__ void __launch_bounds_(512, 2)
                 f128 dbias_f;
                 f128 dweight_f;
                 for(int i=0; i<f128::size; ++i){
-                    
+                    int data_idx = o*f128::size + i;
+                    float dy_i = (float)dy128_curr[data_idx];
+                    float norm_bti = ((float)x128_curr[data_idx] - mean[bt])*rstd[bt];
+                    dbias_f[i] = dy_i;
+                    dweight_f[i] = dy_i * norm_bti;
+
+                    // x derivative
+                    // dx = dn * rstd + sum_over_H(dn * -rstd * 1/H) - (x - mean)*sum_over_H(dn * (x-mean)*rstd^3 / H)
+                    //    = rstd*(dn -1/H *sum_over_H(dn) - (x-mean)*sum_over_H(dn*(x-mean)*rstd^2 / H))
+                    //    = rstd*(dn -1/H *sum_over_H(dn) - (x-mean)*rstd*sum_over_H(dn*n/H))
+                    //    = rstd(dn - dnorm_mean - n * dnorm_norm_mean)
+                    float dval = 0.f;
+                    dval += (float)weight128_curr[data_idx] * (float)dy128_curr[data_idx]; // term 1
+                    dval -= dnorm_mean; // term 2
+                    dval -= norm_bti * dnorm_norm_mean; // term 3
+                    dval *= rstd[bt]; // scale
+                    dx128_curr[data_idx] = (floatX)((float)dx128_curr[data_idx] + dval);
                 }
             }
 
