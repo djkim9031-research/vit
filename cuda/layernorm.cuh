@@ -70,13 +70,14 @@ __global__ void layernorm_backward_kernel1(float* x, float* mean, float* rstd, f
 // @param dweight       linearized weight tensor derivatives
 // @param dbias         linearized bias tensor derivatives
 // @param dy            linearized output tensor derivatives
+// @param scratch       linearized buffer to store logits (inference) or gradients of logits (training)
 // @param B             number of batches
 // @param T             sequence length
 // @param H             hidden size
 //
 __global__ void __launch_bounds_(512, 2)
     layernorm_backward_kernel2(const floatX* x, const float* mean, const float* rstd, const floatX* weight,
-                               floatX* dx, floatX* dweight, floatX* dbias, const floatX* dy,
+                               floatX* dx, floatX* dweight, floatX* dbias, const floatX* dy, float* scratch,
                                int B, int T, int H);
 
 // -----------------------------------------------------------------------------------------
