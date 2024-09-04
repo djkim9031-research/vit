@@ -139,7 +139,7 @@ __global__ void layernorm_backward_kernel1(float* x, float* mean, float* rstd, f
 
 __global__ void __launch_bounds_(512, 2)
     layernorm_backward_kernel2(const floatX* x, const float* mean, const float* rstd, const floatX* weight,
-                               floatX* dx, floatX* dweight, floatX* dbias, const floatX* dy,
+                               floatX* dx, floatX* dweight, floatX* dbias, const floatX* dy, float* scratch,
                                int B, int T, int H){
     
     int BLOCK_SIZE = blockDim.x;
@@ -244,7 +244,7 @@ __global__ void __launch_bounds_(512, 2)
                 }
 
                 // The idea is if warp_Id != 0, then results are stored in temporary shared memory (which is shared location with shared)
-                // if warp_Id == 0, the results from temporary shared memory are first mapped to shared., then reduced summed to global memory.
+                // if warp_Id == 0, the results from temporary shared memory are mapped to shared.
                 if(warp_Id != 0){
                     store128(dbias_tmp_shared + threadIdx.x * f128::size, dbias_f);
                     store128(dweight_tmp_shared + threadIdx.x * f128::size, dweight_f);
@@ -280,7 +280,16 @@ __global__ void __launch_bounds_(512, 2)
         }
     }
     __syncthreads();
-    
+
+    // Each block writes its partial sum to global memory.
+    // The last block to finish becomes responsible for summing up all the partial sums.
+    // This is done by atomically incrementing a flag (which is cleared to 0 before launching the kernel).
+    unsigned int* scratchFlag = (unsigned int*)scratch;
+    // Increment scratch pointer by a full cacheline so that everything remains cacheline aligned
+    scratch += 32;
+    float* scratch_dbias = scratch;
+    float* scratch_dweight = scratch + H;
+
 
 }
 
