@@ -289,7 +289,12 @@ __global__ void __launch_bounds_(512, 2)
     scratch += 32;
     float* scratch_dbias = scratch;
     float* scratch_dweight = scratch + H;
-
+    for(int i=threadIdx.x*f128::size; i<H; i+=BLOCK_SIZE*f128::size){
+        // write to global memory
+        store128(scratch_dbias + i + 2*H*blockIdx.x, load128(dbias_shared + i));
+        store128(scratch_dweight + i + 2*H*blockIdx.x, load128(dweight_shared + i));
+    }
+    __syncthreads();
 
 }
 
